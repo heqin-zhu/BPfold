@@ -19,8 +19,9 @@
     <img src="bpm.png", width="800">
   </div>
   <p align="center">
-    <a href="TODO">bioRxiv</a> | 
-    <a href="https://github.com/heqin-zhu/BPfold">code</a>
+    <a href="https://doi.org/10.1101/2024.10.22.619430">bioRxiv</a> | 
+    <a href="https://www.biorxiv.org/content/10.1101/2024.10.22.619430.full.pdf">PDF</a> |
+    <a href="https://github.com/heqin-zhu/BPfold">Code</a>
   </p>
 </p>
 
@@ -31,8 +32,24 @@ RNA secondary structure plays essential roles in modeling RNA tertiary structure
 
 
 ## Installation
+### Requirements
+- python3.6+
+- anaconda
+
+### Instructions
+1. Clone this repo.
+```shell
+git clone git@github.com:heqin-zhu/BPfold.git
+cd BPfold
+```
+2. Create and activate BPfold environment.
 ```shell
 conda env create -f BPfold_environment.yaml
+conda activate BPfold
+```
+3. Download `model_predict.tar.gz` in [releases](https://github.com/heqin-zhu/BPfold/releases) and decompress it.
+```shell
+tar -xzf model_predict.tar.gz -C paras
 ```
 
 ## Usage
