@@ -1,0 +1,54 @@
+basic:
+  checkpoint_dir: null
+  config: configs/config.yaml
+  gpu: '0'
+  ignore_fold: false
+  run_name: BPfold_dim256
+  test_epoch: null
+  save_contact_map: false
+common:
+  nfolds: 6
+  normalize_energy: true
+  seed: 42
+  use_BPE: true
+  use_BPP: false
+dataset:
+  RNAseq:
+    BPM_type: all
+    Lmax: 600
+    Lmin: 0
+    cache_dir: .cache_data
+    data_dir: ../mydata
+    fold: 0
+    index_name: data_index.yaml
+    method: CDPfold
+    predict_files: null
+    test_set: null
+    trainall: false
+    training_set: null
+  data_name: RNAseq
+learning:
+  batch_size: 48
+  earlystop: false
+  epoch: 150
+  fold_list: null
+  gradientclip: null # 3.0
+  load_checkpoint: true # train
+  loss: BCE
+  lr: 0.0005
+  metric_name: F1
+  num_workers: 4
+  pin_memory: False
+  pos_weight: 300 # weight of positive samples
+  save_freq: 4
+model:
+  BPfold:
+    adj_ks: 3
+    depth: 12
+    dim: 256
+    head_size: 32
+    not_slice: false
+    num_convs: 3
+    positional_embedding: dyn # alibi
+    use_se: true
+  model_name: BPfold
