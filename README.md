@@ -21,7 +21,9 @@
   <p align="center">
     <a href="https://doi.org/10.1101/2024.10.22.619430">bioRxiv</a> | 
     <a href="https://www.biorxiv.org/content/10.1101/2024.10.22.619430.full.pdf">PDF</a> |
-    <a href="https://github.com/heqin-zhu/BPfold">Code</a>
+    <a href="https://github.com/heqin-zhu/BPfold">GitHub</a> |
+    <a href="https://pypi.org/project/BPfold">PyPI</a>
+    
   </p>
 </p>
 
@@ -31,8 +33,6 @@
 
 * [Introduction](#introduction)
 * [Installation](#installation)
-    * [Requirements](#requirements)
-    * [Instructions](#instructions)
 * [Usage](#usage)
     * [BPfold motif library](#bpfold-motif-library)
     * [BPfold Prediction](#bpfold-prediction)
@@ -49,30 +49,23 @@ Deep learning methods have demonstrated great performance for RNA secondary stru
 
 
 ## Installation
-### Requirements
-- Linux system
-- python3.6+
-- anaconda
-
-### Instructions
-1. Clone this repo.
+1. Install BPfold
 ```shell
-git clone git@github.com:heqin-zhu/BPfold.git
-cd BPfold
+pip3 install BPfold --index-url https://pypi.org/simple
 ```
-2. Create and activate BPfold environment.
+2. Optional: Install pytorch according to your device
 ```shell
-conda env create -f BPfold_environment.yaml
-conda activate BPfold
+pip3 install torch==2.0.1 --index-url https://download.pytorch.org/whl/cu118  # GPU, CUDA 11.8
+# pip3 install torch==2.0.1 --index-url https://download.pytorch.org/whl/cpu  # CPU
 ```
-3. Download [model_predict.tar.gz](https://github.com/heqin-zhu/BPfold/releases/download/v0.1/model_predict.tar.gz) in [releases](https://github.com/heqin-zhu/BPfold/releases) and decompress it.
+3. Download [model_predict.tar.gz](https://github.com/heqin-zhu/BPfold/releases/latest/download/model_predict.tar.gz) in [releases](https://github.com/heqin-zhu/BPfold/releases) and decompress it.
 ```shell
-wget https://github.com/heqin-zhu/BPfold/releases/download/v0.1/model_predict.tar.gz
-tar -xzf model_predict.tar.gz -C src/BPfold/paras
+wget https://github.com/heqin-zhu/BPfold/releases/latest/download/model_predict.tar.gz
+tar -xzf model_predict.tar.gz
 ```
-4. Download datasets [BPfold_data.tar.gz](https://github.com/heqin-zhu/BPfold/releases/download/v0.1/BPfold_data.tar.gz) in [releases](https://github.com/heqin-zhu/BPfold/releases) and decompress them.
+4. Optional: Download datasets [BPfold_data.tar.gz](https://github.com/heqin-zhu/BPfold/releases/latest/download/BPfold_data.tar.gz) in [releases](https://github.com/heqin-zhu/BPfold/releases) and decompress them.
 ```shell
-wget https://github.com/heqin-zhu/BPfold/releases/download/v0.1/BPfold_data.tar.gz
+wget https://github.com/heqin-zhu/BPfold/releases/latest/download/BPfold_data.tar.gz
 tar -xzf BPfold_data.tar.gz 
 ```
 
@@ -87,16 +80,16 @@ For instance, `CAAAAUG_0_6-3 -49.7835` represents motif `CAAAAUG` has a known pa
 ### BPfold Prediction
 Use BPfold to predict RNA secondary structures. The following are some examples. The `out_type` can be `csv`, `bpseq`, `ct` or `dbn', which is defaultly set as `csv`.
 ```shell
-python3 -m src.BPfold.predict --checkpoint_dir PATH_TO_CHECKPOINT --seq GGUAAAACAGCCUGU AGUAGGAUGUAUAUG --output BPfold_results
-python3 -m src.BPfold.predict --checkpoint_dir PATH_TO_CHECKPOINT --input examples/examples.fasta # (multiple sequences are supported)
-python3 -m src.BPfold.predict --checkpoint_dir PATH_TO_CHECKPOINT --input examples/URS0000D6831E_12908_1-117.bpseq # .bpseq, .ct, .dbn
+BPfold --checkpoint_dir PATH_TO_CHECKPOINT_DIR --seq GGUAAAACAGCCUGU AGUAGGAUGUAUAUG --output BPfold_results
+BPfold --checkpoint_dir PATH_TO_CHECKPOINT_DIR --input examples/examples.fasta --out_type csv # (multiple sequences are supported)
+BPfold --checkpoint_dir PATH_TO_CHECKPOINT_DIR --input examples/URS0000D6831E_12908_1-117.bpseq # .bpseq, .ct, .dbn
 ```
 
 <details>
 
 <summary>Example of BPfold prediction</summary>
 
-Here are the outputs after running `BPfold --input examples/examples.fasta --out_type bpseq`:
+Here are the outputs after running `BPfold --checkpoint_dir model_predict --input examples/examples.fasta --out_type bpseq`:
 ```txt
 >> Welcome to use "BPfold" for predicting RNA secondary structure!
 Loading paras/model_predict/BPfold_1-6.pth
@@ -123,14 +116,14 @@ For reproduction of all the quantitative results, we provide the predicted secon
 
 **Directly download**
 ```shell
-wget https://github.com/heqin-zhu/BPfold/releases/download/v0.1/BPfold_test_results.tar.gz
+wget https://github.com/heqin-zhu/BPfold/releases/latest/download/BPfold_test_results.tar.gz
 tar -xzf BPfold_test_results.tar.gz
 ```
 **Use BPfold**
-1. Download [BPfold_reproduce.tar.gz](https://github.com/heqin-zhu/BPfold/releases/download/v0.1/BPfold_reproduce.pth) in [releases](https://github.com/heqin-zhu/BPfold/releases).
+1. Download [BPfold_reproduce.tar.gz](https://github.com/heqin-zhu/BPfold/releases/latest/download/BPfold_reproduce.pth) in [releases](https://github.com/heqin-zhu/BPfold/releases).
 ```shell
-wget https://github.com/heqin-zhu/BPfold/releases/download/v0.1/model_reproduce.tar.gz
-tar -xzf model_reproduce.tar.gz -C src/BPfold/paras
+wget https://github.com/heqin-zhu/BPfold/releases/latest/download/model_reproduce.tar.gz
+tar -xzf model_reproduce.tar.gz
 ```
 2. Use BPfold to predict test sequences.
 
