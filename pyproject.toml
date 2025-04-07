@@ -4,7 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "BPfold"
-dynamic = ["version", "readme"]
+dynamic = ["version"]
+readme = "README.md"
 authors = [
   { name="Heqin Zhu", email="zhuheqin1@google.com" },
 ]
@@ -49,4 +50,3 @@ where = ["src"]
 
 [tool.setuptools.dynamic]
 version = {attr = "BPfold.__version__"}  # any module attribute compatible with ast.literal_eval
-readme = {file = ["README.md"]}
