@@ -33,6 +33,8 @@
 
 * [Introduction](#introduction)
 * [Installation](#installation)
+    * [Requirements](#requirements)
+    * [Instructions](#instructions)
 * [Usage](#usage)
     * [BPfold motif library](#bpfold-motif-library)
     * [BPfold Prediction](#bpfold-prediction)
@@ -49,14 +51,19 @@ Deep learning methods have demonstrated great performance for RNA secondary stru
 
 
 ## Installation
-1. Install BPfold
+### Requirements
+- python3.8+
+- anaconda
+
+### Instructions
+1. Create and activate BPfold environment.
+```shell
+conda env create -f BPfold_environment.yaml
+conda activate BPfold
+```
+2. Install BPfold
 ```shell
 pip3 install BPfold --index-url https://pypi.org/simple
-```
-2. Optional: Install pytorch according to your device
-```shell
-pip3 install torch==2.0.1 --index-url https://download.pytorch.org/whl/cu118  # GPU, CUDA 11.8
-# pip3 install torch==2.0.1 --index-url https://download.pytorch.org/whl/cpu  # CPU
 ```
 3. Download [model_predict.tar.gz](https://github.com/heqin-zhu/BPfold/releases/latest/download/model_predict.tar.gz) in [releases](https://github.com/heqin-zhu/BPfold/releases) and decompress it.
 ```shell
