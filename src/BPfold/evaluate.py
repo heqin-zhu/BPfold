@@ -26,7 +26,7 @@ def get_index_data(gt_dir, testsets):
             if os.path.isdir(dataset_dir):
                 if dataset.startswith('PDB_test'):
                     dataset = 'PDB_test'
-                if testsets is not None and dataset not in testsets:
+                if testsets and dataset not in testsets:
                     continue
                 if dataset not in index_data:
                     index_data[dataset] = []
@@ -207,7 +207,7 @@ def parse_args():
     parser.add_argument('--pred_dir', type=str)
     parser.add_argument('--gt_dir', type=str, default='BPfold_data/test_data')
     parser.add_argument('--tag', type=str)
-    parser.add_argument('--test_set', nargs='*')
+    parser.add_argument('--testsets', nargs='*')
     parser.add_argument('--show_nc', action='store_true')
     parser.add_argument('--summary', type=str, help='yaml file containing metric results.')
     args = parser.parse_args()
@@ -216,15 +216,13 @@ def parse_args():
 
 def main():
     args = parse_args()
-    if not args.test_set:
-        args.test_set = "archiveII bpRNA Rfam12.3-14.10 PDB_test bpRNAnew".split()
     if args.pred_dir:
         if args.tag is None:
             segs = args.pred_dir.split(os.path.sep)[-3:]
             args.tag = 'eval_'+ '_'.join(segs)
 
         dest_path = args.tag+'.yaml'
-        evaluate(dest_path, args.pred_dir, args.gt_dir, testsets=args.test_set, show_nc=args.show_nc)
+        evaluate(dest_path, args.pred_dir, args.gt_dir, testsets=args.testsets, show_nc=args.show_nc)
         summary(dest_path)
     elif args.summary:
         summary(args.summary)

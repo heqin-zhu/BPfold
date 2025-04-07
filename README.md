@@ -78,7 +78,7 @@ For instance, `CAAAAUG_0_6-3 -49.7835` represents motif `CAAAAUG` has a known pa
 >The base pair motif library can be used as thermodynamic priors in other models.
 
 ### BPfold Prediction
-Use BPfold to predict RNA secondary structures. The following are some examples. The `out_type` can be `csv`, `bpseq`, `ct` or `dbn', which is defaultly set as `csv`.
+Use BPfold to predict RNA secondary structures. The following are some examples. The `out_type` can be `csv`, `bpseq`, `ct` or `dbn`, which is defaultly set as `csv`.
 ```shell
 BPfold --checkpoint_dir PATH_TO_CHECKPOINT_DIR --seq GGUAAAACAGCCUGU AGUAGGAUGUAUAUG --output BPfold_results
 BPfold --checkpoint_dir PATH_TO_CHECKPOINT_DIR --input examples/examples.fasta --out_type csv # (multiple sequences are supported)
@@ -129,7 +129,7 @@ tar -xzf model_reproduce.tar.gz
 
 **Evaluate**
 ```shell
-python3 -m src.BPfold.evaluate --data_dir BPfold_data --pred_dir BPfold_test_results
+BPfold_eval --gt_dir BPfold_data --pred_dir BPfold_test_results
 ```
 
 After running above commands for evaluation, you will see the following outputs:
