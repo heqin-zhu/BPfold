@@ -65,7 +65,7 @@ class RNAseq_data(data.Dataset):
         index_file = os.path.join(data_dir, index_name)
         if self.phase == 'predict':
             self.file_list = predict_files
-            self.Lmax = max([f['length'] for f in self.file_list])
+            self.Lmax = max([f['length'] for f in self.file_list]) if predict_files else float('inf')
         else:
             if self.phase in {'train', 'validate'}:
                 with open(index_file) as f:
@@ -118,7 +118,7 @@ class RNAseq_data(data.Dataset):
                 dic['path'] = os.path.join(self.data_dir, dic['path'])
 
         if para_dir is None:
-            para_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'paras')
+            para_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'paras')
         if self.use_BPE:
             self.normalize_energy = normalize_energy
             self.BPM_ene = BPM_energy(path=os.path.join(para_dir, 'key.energy'))
@@ -186,12 +186,8 @@ class RNAseq_data(data.Dataset):
         # BPEM: 1x(Lmax+2)x(Lmax+2)
         if self.use_BPE:
             bpem = self.BPM_ene.get_energy(ret['seq'], normalize_energy=self.normalize_energy, BPM_type=self.BPM_type)
-            if self.normalize_energy:
-                bpem_pad = np.pad(bpem, ((0, 0), (1, rside_pad), (1, rside_pad)), constant_values=0)
-                ret['BPEM'] = torch.FloatTensor(bpem_pad)
-            else:
-                bpem_pad = np.pad(bpem, ((1, rside_pad), (1, rside_pad)), constant_values=0)
-                ret['BPEM'] = torch.FloatTensor(bpem_pad).unsqueeze(0)
+            bpem_pad = np.pad(bpem, ((0, 0), (1, rside_pad), (1, rside_pad)), constant_values=0)
+            ret['BPEM'] = torch.FloatTensor(bpem_pad)
 
         y = {k: ret[k] for k in ['mask', 'forward_mask', 'nc_map', 'seq_onehot']}
         # gt, contact map: (Lmax+2)x(Lmax+2)
@@ -204,7 +200,6 @@ class RNAseq_data(data.Dataset):
 
     def __getitem__(self, idx):
         info_dic = self.file_list[idx]
-
         dataset = info_dic['dataset'] if 'dataset' in info_dic else 'RNAseq'
         seq = name = connects = None
         

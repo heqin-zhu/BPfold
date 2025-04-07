@@ -22,7 +22,8 @@ def get_index_data(gt_dir, testsets):
     index_data = {}
     if index_path is None:
         for dataset in os.listdir(gt_dir):
-            if os.isdir(dataset):
+            dataset_dir = os.path.join(gt_dir, dataset)
+            if os.path.isdir(dataset_dir):
                 if dataset.startswith('PDB_test'):
                     dataset = 'PDB_test'
                 if testsets is not None and dataset not in testsets:
@@ -30,7 +31,6 @@ def get_index_data(gt_dir, testsets):
                 if dataset not in index_data:
                     index_data[dataset] = []
 
-                dataset_dir = os.path.join(gt_dir, dataset)
                 for pre, ds, fs in os.listdir(dataset_dir):
                     for f in fs:
                         if f.endswith('.bpseq'):

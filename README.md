@@ -68,12 +68,12 @@ conda activate BPfold
 3. Download [model_predict.tar.gz](https://github.com/heqin-zhu/BPfold/releases/download/v0.1/model_predict.tar.gz) in [releases](https://github.com/heqin-zhu/BPfold/releases) and decompress it.
 ```shell
 wget https://github.com/heqin-zhu/BPfold/releases/download/v0.1/model_predict.tar.gz
-tar -xzf model_predict.tar.gz -C paras
+tar -xzf model_predict.tar.gz -C src/BPfold/paras
 ```
 4. Download datasets [BPfold_data.tar.gz](https://github.com/heqin-zhu/BPfold/releases/download/v0.1/BPfold_data.tar.gz) in [releases](https://github.com/heqin-zhu/BPfold/releases) and decompress them.
 ```shell
 wget https://github.com/heqin-zhu/BPfold/releases/download/v0.1/BPfold_data.tar.gz
-mkdir BPfold_data && tar -xzf BPfold_data.tar.gz -C BPfold_data
+tar -xzf BPfold_data.tar.gz 
 ```
 
 ## Usage
@@ -85,18 +85,18 @@ For instance, `CAAAAUG_0_6-3 -49.7835` represents motif `CAAAAUG` has a known pa
 >The base pair motif library can be used as thermodynamic priors in other models.
 
 ### BPfold Prediction
-Use BPfold to predict RNA secondary structures. The following are some examples.
+Use BPfold to predict RNA secondary structures. The following are some examples. The `out_type` can be `csv`, `bpseq`, `ct` or `dbn', which is defaultly set as `csv`.
 ```shell
-BPfold --checkpoint_dir PATH_TO_CHECKPOINT --seq GGUAAAACAGCCUGU AGUAGGAUGUAUAUG --output BPfold_results
-BPfold --checkpoint_dir PATH_TO_CHECKPOINT --input examples/examples.fasta # (multiple sequences are supported)
-BPfold --checkpoint_dir PATH_TO_CHECKPOINT --input examples/URS0000D6831E_12908_1-117.bpseq # .bpseq, .ct, .dbn
+python3 -m src.BPfold.predict --checkpoint_dir PATH_TO_CHECKPOINT --seq GGUAAAACAGCCUGU AGUAGGAUGUAUAUG --output BPfold_results
+python3 -m src.BPfold.predict --checkpoint_dir PATH_TO_CHECKPOINT --input examples/examples.fasta # (multiple sequences are supported)
+python3 -m src.BPfold.predict --checkpoint_dir PATH_TO_CHECKPOINT --input examples/URS0000D6831E_12908_1-117.bpseq # .bpseq, .ct, .dbn
 ```
 
 <details>
 
 <summary>Example of BPfold prediction</summary>
 
-Here are the outputs after running `BPfold --input examples/examples.fasta`:
+Here are the outputs after running `BPfold --input examples/examples.fasta --out_type bpseq`:
 ```txt
 >> Welcome to use "BPfold" for predicting RNA secondary structure!
 Loading paras/model_predict/BPfold_1-6.pth
@@ -130,13 +130,13 @@ tar -xzf BPfold_test_results.tar.gz
 1. Download [BPfold_reproduce.tar.gz](https://github.com/heqin-zhu/BPfold/releases/download/v0.1/BPfold_reproduce.pth) in [releases](https://github.com/heqin-zhu/BPfold/releases).
 ```shell
 wget https://github.com/heqin-zhu/BPfold/releases/download/v0.1/model_reproduce.tar.gz
-tar -xzf model_reproduce.tar.gz -C paras
+tar -xzf model_reproduce.tar.gz -C src/BPfold/paras
 ```
 2. Use BPfold to predict test sequences.
 
 **Evaluate**
 ```shell
-BPfold_eval --data_dir BPfold_data --pred_dir BPfold_test_results
+python3 -m src.BPfold.evaluate --data_dir BPfold_data --pred_dir BPfold_test_results
 ```
 
 After running above commands for evaluation, you will see the following outputs:

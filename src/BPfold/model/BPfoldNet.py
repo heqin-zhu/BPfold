@@ -288,7 +288,7 @@ class BPfold_model(nn.Module):
                  embed_filter=False,
                  use_BPP=True,
                  use_BPE=True,
-                 normalize_energy=False,
+                 dispart_outer_inner=True,
                  *args,
                  **kargs,
                  ):
@@ -304,7 +304,7 @@ class BPfold_model(nn.Module):
         if use_BPP:
             conv_in_chan += 1
         if use_BPE:
-            conv_in_chan += 1 + normalize_energy
+            conv_in_chan += 1 + dispart_outer_inner
 
         self.transformer = AdjTransformerEncoder(
             num_layers=depth,

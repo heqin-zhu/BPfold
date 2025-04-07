@@ -62,23 +62,29 @@ def read_SS(path:str, return_index:bool=False):
     elif low_path.endswith('.ct'):
         return read_ct(path, return_index)
     elif low_path.endswith('.dbn'):
-        read_dbn(path, return_index)
+        return read_dbn(path, return_index)
     else:
         raise Exception(f'[Error] Unkown file type: {path}')
 
 
 def read_dbn(path:str, return_index:bool=False):
+    seq = dbn = ''
     with open(path) as fp:
-        seq = None
-        line = fp.readline().strip('\r\n ')
-        if set(line.upper()).issubset(set('AUGC')):
-            seq = line
-            line = fp.readline().strip('\r\n ')
-        connects = dbn2connects(line)
-        if return_index:
-            return seq, connects, list(range(1, 1+len(connects)))
-        else:
-            return seq, connects
+        for line in fp.readlines():
+            line = line.strip('\r\n ')
+            if not line or line.startswith('>') or line.startswith('#'):
+                continue
+            elif line[0].isalpha():
+                if dbn:
+                    break
+                seq += line
+            else:
+                dbn += line
+    connects = dbn2connects(dbn)
+    if return_index:
+        return seq, connects, list(range(1, 1+len(connects)))
+    else:
+        return seq, connects
 
 
 def read_bpseq(path:str, return_index:bool=False):
@@ -141,29 +147,34 @@ def read_ct(path:str, return_index:bool=False):
     bases = []
     connects = []
     indexes = []
-    ct = 0
+    last_idx = 0
     with open(path) as f:
         for i, line in enumerate(f.readlines()):
             if line.startswith('#'):
-                ct +=1
-                continue
-            if ct == i:
                 continue
             items = [item for item in line.strip('\n\t\r ').split() if item]
-            if len(items)!=6 or int(items[0])!=i-ct:
-                break
-            idx, base, _, _, conn, _ = items
+            if len(items)!=6:
+                continue
+            idx, base, prev_one, next_one, conn, cur = items
+            try:
+                assert int(cur) == int(next_one)-1 == int(prev_one)+1
+                assert base.isalpha()
+            except:
+                continue
+            idx, conn = int(idx), int(conn)
+            if idx!=last_idx+1:
+                print(f'[Warning] Inconsistent line number: {last_idx}, {idx}')
+            last_idx = idx
             bases.append(base)
             connects.append(conn)
-            indexes.append(int(idx))
-    connects = [int(i) for i in connects]
+            indexes.append(idx)
     if return_index:
         return ''.join(bases), connects, indexes
     else:
         return ''.join(bases), connects
 
 
-def write_SS(path:str, seq:str, connects:[int], out_type='bpseq')->None:
+def write_SS(path:str, seq:str, connects:[int])->None:
     '''
     Write secondary structure to bpseq/ct/dbn.
 
@@ -175,17 +186,18 @@ def write_SS(path:str, seq:str, connects:[int], out_type='bpseq')->None:
         Containing RNA bases: AUGC.
     connects: [int], length L
         The i-th base connects to `connects[i-1]`-th base, 1-indexed, 0 for no connection.
-    out_type: str
-        bpseq, ct, dbn
     '''
-    if 'bpseq' in out_type.lower():
+    suf = 'bpseq'
+    sufs = ['bpseq', 'dbn', 'ct']
+    file_name, tmp_suf = get_file_name(path, return_suf=True)
+    if tmp_suf and tmp_suf.lower() in sufs:
+        suf = tmp_suf
+    if suf.lower() == 'bpseq':
         write_bpseq(path, seq, connects)
-    elif 'ct' in out_type.lower():
+    elif suf.lower() == 'ct':
         write_ct(path, seq, connects)
-    elif 'dbn' in out_type.lower():
+    elif suf.lower() == 'dbn':
         write_dbn(path, seq, connects)
-    else:
-        raise Exception(f'[Error] Unkown output secondary structure file type: {out_type}')
 
 
 def write_dbn(path:str, seq:str, connects:[int])->None:
@@ -463,6 +475,73 @@ def connects2arr(connects:[int]):
         if conn!=0:
             ret[num-1][conn-1] = ret[conn-1][num-1] = 1
     return ret
+
+
+def read_react(path):
+    '''
+    Read reactivities from path. It contains white-space-delimited columns. The first column is the nucleotide, the second column is the chemical reactivity. NA reactivity data are denoted as number less than -100, 'NA', or 'nan'.
+
+    Parameters
+    ----------
+    path: str
+        path of reactivity file
+
+    Returns
+    -------
+    reacts: [float]
+    '''
+    bases = []
+    reacts = []
+    with open(path) as fp:
+        for line in fp.readlines():
+            line = line.strip('\n\t\r ')
+            if line:
+                if line.startswith('#'):
+                    continue
+                elif line[0].isdigit():
+                    parts = [part for part in line.replace('\t', ' ').split() if part]
+                    assert len(parts) in {2,3}, f'[Error] when parsing line {line} from {path}.'
+                    idx = int(parts[0])
+                    base = react = None
+                    if len(parts)==2:
+                        react = parts[1]
+                    else:
+                        base = parts[1]
+                        assert base in 'AUGCNT'
+                        react = parts[2]
+                    bases.append(base)
+                    if len(reacts)+1!=idx:
+                        reacts += [float('nan') for i in range(idx-1-len(reacts))]
+                    if react.lower().startswith('n'):
+                        reacts.append(float('nan'))
+                    else:
+                        reacts.append(float(react))
+                else:
+                    raise Exception('[Error] when reading react from {path}.')
+    return reacts
+
+
+def write_react(path, reacts, seq=None, delimiter=' '):
+    '''
+    Write reactivities of seq to path. It contains white-space-delimited columns. The first column is the nucleotide, the second column is the chemical reactivity. NA reactivity data are denoted as number less than -100, 'NA', or 'nan'.
+
+    Parameters
+    ----------
+    path: str
+        path of reactivity file
+    reacts: [float]
+        reactivities
+    seq: str
+        AUGCNT
+    '''
+    if seq is not None:
+        assert len(seq) == len(reacts), f'length mismatch, seq={len(seq)}, reacts={len(reacts)}'
+    with open(path, 'w') as fp:
+        for idx in range(len(reacts)):
+            if seq is None:
+                fp.write(f'{idx+1}{delimiter}{reacts[idx]}\n')
+            else:
+                fp.write(f'{idx+1}{delimiter}{seq[idx]}{delimiter}{reacts[idx]}\n')
 
 
 def valid_ss(seq:str, connects:[int], indexes:[int]=None)->bool:

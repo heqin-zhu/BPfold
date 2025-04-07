@@ -16,3 +16,6 @@ examples
 *png
 *jpg
 *.fasta
+paras
+lab_*
+*_labs
