@@ -163,7 +163,7 @@ def read_ct(path:str, return_index:bool=False):
                 continue
             idx, conn = int(idx), int(conn)
             if idx!=last_idx+1:
-                print(f'[Warning] Inconsistent line number: {last_idx}, {idx}')
+                print(f'[Warning] Inconsistent line number: {last_idx}, {idx} : {path}')
             last_idx = idx
             bases.append(base)
             connects.append(conn)
@@ -187,17 +187,15 @@ def write_SS(path:str, seq:str, connects:[int])->None:
     connects: [int], length L
         The i-th base connects to `connects[i-1]`-th base, 1-indexed, 0 for no connection.
     '''
-    suf = 'bpseq'
-    sufs = ['bpseq', 'dbn', 'ct']
-    file_name, tmp_suf = get_file_name(path, return_suf=True)
-    if tmp_suf and tmp_suf.lower() in sufs:
-        suf = tmp_suf
-    if suf.lower() == 'bpseq':
+    low_path = path.lower()
+    if low_path.endswtih('bpseq'):
         write_bpseq(path, seq, connects)
-    elif suf.lower() == 'ct':
+    elif low_path.endswtih('ct'):
         write_ct(path, seq, connects)
-    elif suf.lower() == 'dbn':
+    elif low_path.enswith('dbn'):
         write_dbn(path, seq, connects)
+    else:
+        raise Exception(f'Unkown file type: {path}, only .ct, .bpseq, .dbn are allowed.')
 
 
 def write_dbn(path:str, seq:str, connects:[int])->None:
@@ -272,6 +270,7 @@ def dispart_nc_pairs(seq:str, connects:[int])->[int]:
     connects: [int], length L
     nc_connects: [int], length L
     '''
+    assert len(seq) == len(connects) != 0
     seq = seq.upper()
     canonical_pairs = {'AU', 'UA', 'GC', 'CG', 'GU', 'UG'}
     conns = [0] * len(seq)

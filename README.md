@@ -56,6 +56,11 @@ Deep learning methods have demonstrated great performance for RNA secondary stru
 - anaconda
 
 ### Instructions
+0. Clone this repo
+```shell
+git clone git@github.com:heqin-zhu/BPfold.git
+cd BPfold
+```
 1. Create and activate BPfold environment.
 ```shell
 conda env create -f BPfold_environment.yaml
