@@ -152,24 +152,20 @@ def summary(path, to_latex=True):
     metric_dic_all = None
     with open(path) as fp:
         metric_dic_all = yaml.load(fp.read(), Loader=yaml.FullLoader)
-    metric_dic_none_value = {}
     metric_dic = {}
     metric_dic_gt600 = {}
     metric_dic_le600 = {}
     for dataset, dic in metric_dic_all.items():
-        metric_dic_none_value[dataset] = {}
         metric_dic[dataset] = {}
         metric_dic_le600[dataset] = {}
         metric_dic_gt600[dataset] = {}
         for name, d in dic.items():
-            if d['F1'] is None:
-                metric_dic_none_value[dataset][name] = d
+            d = {k: 0 if v is None else v for k,v in d.items()}
+            metric_dic[dataset][name] = d
+            if d['length']<=600:
+                metric_dic_le600[dataset][name] = d
             else:
-                metric_dic[dataset][name] = d
-                if d['length']<=600:
-                    metric_dic_le600[dataset][name] = d
-                else:
-                    metric_dic_gt600[dataset][name] = d
+                metric_dic_gt600[dataset][name] = d
 
     metric_names = ['INF', 'F1', 'P', 'R']
     pred_and_all = sorted([(dataset, len(metric_dic[dataset]),len(d)) for dataset, d in metric_dic_all.items()])

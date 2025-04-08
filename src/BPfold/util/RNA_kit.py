@@ -157,13 +157,14 @@ def read_ct(path:str, return_index:bool=False):
                 continue
             idx, base, prev_one, next_one, conn, cur = items
             try:
-                assert int(cur) == int(next_one)-1 == int(prev_one)+1
+                assert int(next_one)==0 or int(cur) == int(next_one)-1 == int(prev_one)+1
                 assert base.isalpha()
             except:
                 continue
             idx, conn = int(idx), int(conn)
             if idx!=last_idx+1:
-                print(f'[Warning] Inconsistent line number: {last_idx}, {idx} : {path}')
+                print(f'[Warning] Parsing "{path}" paused, only read {last_idx} lines. The file may be broken or contain multiple structures.')
+                break
             last_idx = idx
             bases.append(base)
             connects.append(conn)
