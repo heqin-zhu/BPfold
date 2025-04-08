@@ -188,9 +188,9 @@ def write_SS(path:str, seq:str, connects:[int])->None:
         The i-th base connects to `connects[i-1]`-th base, 1-indexed, 0 for no connection.
     '''
     low_path = path.lower()
-    if low_path.endswtih('bpseq'):
+    if low_path.endswith('bpseq'):
         write_bpseq(path, seq, connects)
-    elif low_path.endswtih('ct'):
+    elif low_path.endswith('ct'):
         write_ct(path, seq, connects)
     elif low_path.enswith('dbn'):
         write_dbn(path, seq, connects)
