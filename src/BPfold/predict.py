@@ -1,6 +1,7 @@
 import os, gc
 import argparse
 import random
+import math
 
 import numpy as np
 import pandas as pd
@@ -199,18 +200,32 @@ class BPfold_SS:
         out_type: str
             csv, bpseq, ct, dbn
         '''
+        def print_result(save_name, idx, seq, dbn, CI, hide_dbn=False, num_digit=7):
+            CI_str = f'CI={CI:.3f}' if CI>=0.3 else 'CI<0.3'
+            print(f"[{str(idx).rjust(num_digit)}] saved in \"{save_name}\", {CI_str}")
+            if not hide_dbn:
+                print(f'{seq}\n{dbn}')
+
         os.makedirs(save_dir, exist_ok=True)
         if out_type=='csv':
             if save_name is None:
                 save_name = os.path.basename(os.path.abspath(save_dir))
             df = pd.DataFrame(pred_results)
-            csv_path = os.path.join(save_dir, f'{save_name}.csv')
-            df.to_csv(csv_path, index=False)
             df['dbn'] = df['connects'].apply(connects2dbn)
-            df2 = df[['seq_name', 'seq', 'dbn', 'CI']]
-            csv_path2 = os.path.join(save_dir, f'{save_name}_dbn.csv')
-            df2.to_csv(csv_path2, index=False)
-            print(f"Predicted structures in type of `connects` and `dbn` are saved in \"{csv_path}\" and \"{csv_path2}\", respectively.")
+            df_out = df[['seq_name', 'seq', 'dbn', 'CI']]
+            csv_path = os.path.join(save_dir, f'{save_name}.csv')
+            num_digit = math.ceil(math.log(len(df_out), 10))
+            for idx, row in enumerate(df_out.itertuples()):
+                print_result(f'{csv_path}:line{idx+2}:{row.seq_name}', idx+1, row.seq, row.dbn, row.CI, hide_dbn=hide_dbn, num_digit=num_digit)
+            df_out.to_csv(csv_path, index=False)
+            print(f"Predicted structures in format of dot-bracket are saved in \"{csv_path}\".")
+
+            ## NC pairs
+            if 'connects_nc' in df.columns: # not accurate, to be improved
+                df['dbn_nc'] = df['connects_nc'].apply(connects2dbn)
+                df_out_nc = df[['seq_name', 'seq', 'dbn', 'dbn_nc', 'CI']]
+                csv_path_nc = os.path.join(save_dir, f'{save_name}_nc.csv')
+                df_out_nc.to_csv(csv_path_nc, index=False)
         else:
             num_digit = 7
             confidence_dic = {}
@@ -222,10 +237,7 @@ class BPfold_SS:
                 confidence_dic[seq_name] = CI
                 path = os.path.join(save_dir, seq_name+f'.{out_type}')
                 write_SS(path, seq, connects)
-                CI_str = f'CI={CI:.3f}' if CI>=0.3 else 'CI<0.3'
-                print(f"[{str(ct+1).rjust(num_digit)}] saved in \"{path}\", {CI_str}")
-                if not hide_dbn:
-                    print(f'{seq}\n{connects2dbn(connects)}')
+                print_result(path, ct+1, seq, connects2dbn(connects), CI, hide_dbn=hide_dbn, num_digit=num_digit)
 
                 ## NC pairs
                 if 'connects_nc' in res_dic: # not accurate, to be improved

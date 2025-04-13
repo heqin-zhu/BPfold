@@ -193,7 +193,7 @@ def write_SS(path:str, seq:str, connects:[int])->None:
         write_bpseq(path, seq, connects)
     elif low_path.endswith('ct'):
         write_ct(path, seq, connects)
-    elif low_path.enswith('dbn'):
+    elif low_path.endswith('dbn'):
         write_dbn(path, seq, connects)
     else:
         raise Exception(f'Unkown file type: {path}, only .ct, .bpseq, .dbn are allowed.')
