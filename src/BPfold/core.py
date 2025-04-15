@@ -19,7 +19,7 @@ from .model import get_model, get_loss, myMetric, cal_metric_batch
 from .util.yaml_config import write_yaml, get_config, update_config
 from .util.postprocess import postprocess, apply_constraints
 from .util.data_sampler import LenMatchBatchSampler, DeviceMultiDataLoader
-from .util.RNA_kit import write_SS, arr2connects, remove_lone_pairs
+from .util.RNA_kit import write_SS, mat2connects, remove_lone_pairs
 
 
 def flatten(o):

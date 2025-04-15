@@ -16,13 +16,13 @@ from .util.hook_features import hook_features
 from .util.yaml_config import get_config, read_yaml, write_yaml
 from .util.postprocess import postprocess, apply_constraints
 from .util.data_sampler import DeviceMultiDataLoader
-from .util.RNA_kit import read_SS, write_SS, read_fasta, connects2dbn, arr2connects, compute_confidence, remove_lone_pairs, merge_connects
+from .util.RNA_kit import read_SS, write_SS, read_fasta, connects2dbn, mat2connects, compute_confidence, remove_lone_pairs, merge_connects
 
 
 SRC_DIR = os.path.dirname(os.path.realpath(__file__))
 
 
-class BPfold_SS:
+class BPfold_predict:
     def __init__(self, checkpoint_dir, config_file=None):
         '''
         Init
@@ -113,7 +113,7 @@ class BPfold_SS:
                     mat = pred_batch[i][masks[i]].reshape(length, length).detach().cpu().numpy()
                     mat_post = ret_pred[i][masks[i]].reshape(length, length).detach().cpu().numpy()
                     CI = compute_confidence(mat, mat_post)
-                    connects = arr2connects(mat_post)
+                    connects = mat2connects(mat_post)
                     connects = remove_lone_pairs(connects)
 
                     ## save contact maps before and after postprocessing
@@ -132,7 +132,7 @@ class BPfold_SS:
                     ## NC pairs
                     if save_nc: # not accurate, to be improved
                         mat_nc_post = ret_pred_nc[i][masks[i]].reshape(length, length).detach().cpu().numpy()
-                        results['connects_nc'] = arr2connects(mat_nc_post)
+                        results['connects_nc'] = mat2connects(mat_nc_post)
 
                     yield results
 
@@ -293,7 +293,7 @@ def main():
     if args.input is None and args.seq is None:
         show_examples()
 
-    BPfold_predictor = BPfold_SS(checkpoint_dir=args.checkpoint_dir)
+    BPfold_predictor = BPfold_predict(checkpoint_dir=args.checkpoint_dir)
     pred_results = BPfold_predictor.predict(args.seq, args.input, args.batch_size, args.num_workers, args.hook_features, args.save_contact_map, save_nc=args.save_nc)
     save_name = get_file_name(args.input) if args.input else None
     BPfold_predictor.save_pred_results(pred_results, save_dir=args.output, save_name=save_name, out_type=args.out_type)

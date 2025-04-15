@@ -9,7 +9,7 @@ import torch.utils.data as data
 from sklearn.model_selection import KFold
 
 from ..util.misc import get_file_name, str_localtime
-from ..util.RNA_kit import read_SS, connects2arr, mut_seq
+from ..util.RNA_kit import read_SS, connects2mat, mut_seq
 from ..util.postprocess import get_base_index
 from ..util.base_pair_motif import BPM_energy
 from ..util.base_pair_probability import read_BPPM, gen_BPPM
@@ -192,7 +192,7 @@ class RNAseq_data(data.Dataset):
         y = {k: ret[k] for k in ['mask', 'forward_mask', 'nc_map', 'seq_onehot']}
         # gt, contact map: (Lmax+2)x(Lmax+2)
         if self.phase != 'predict':
-            gt = connects2arr(connects)
+            gt = connects2mat(connects)
             gt_pad = np.pad(gt, ((1, rside_pad), (1, rside_pad)), constant_values=0)
             ret['gt'] = torch.FloatTensor(gt_pad)
             y['gt'] = ret['gt']

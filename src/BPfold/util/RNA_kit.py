@@ -434,28 +434,28 @@ def connects2dbn(connects:[int])->str:
     return ''.join(ret)
 
 
-def arr2connects(arr)->[int]:
+def mat2connects(mat)->[int]:
     '''
     Convert contact map to connects.
 
     Parameters
     ----------
-    arr: numpy.ndarray
-        LxL matrix where the arr[i,j]=1 represents paired bases, otherwise 0
+    mat: numpy.ndarray
+        LxL matrix where the mat[i,j]=1 represents paired bases, otherwise 0
 
     Returns
     -------
     connects: [int], length L
         The i-th base connects to `connects[i-1]`-th base, 1-indexed, 0 for no connection.
     '''
-    connects = arr.argmax(axis=1)
+    connects = mat.argmax(axis=1)
     connects[connects!=0] +=1
     if connects[0]!=0:
         connects[connects[0]-1] = 1
     return connects.tolist()
 
 
-def connects2arr(connects:[int]):
+def connects2mat(connects:[int]):
     '''
     Convert connects to contact map.
 
@@ -466,8 +466,8 @@ def connects2arr(connects:[int]):
 
     Returns
     -------
-    arr: numpy.ndarray
-        LxL matrix where the arr[i,j]=1 represents paired bases, otherwise 0
+    mat: numpy.ndarray
+        LxL matrix where the mat[i,j]=1 represents paired bases, otherwise 0
     '''
     L = len(connects)
     ret = np.zeros((L, L))
@@ -589,7 +589,7 @@ def mut_seq(seq:str, connects=None)->str:
     if set(seq.upper()).issubset(set('AUGCT')):
         return seq
     if connects is None:
-        connects = arr2connects(CDP_BPPM(seq))
+        connects = mat2connects(CDP_BPPM(seq))
     for i in range(len(seq)):
         if seq[i] in chars:
             new_seq.append(seq[i])
@@ -602,7 +602,7 @@ def mut_seq(seq:str, connects=None)->str:
     return ''.join(new_seq)
 
 
-def arr2scores(arr, connects, mode)->[float]:
+def mat2scores(mat, connects, mode)->[float]:
     '''
     NOTICE! Deprecated, discarded!
 
@@ -610,8 +610,8 @@ def arr2scores(arr, connects, mode)->[float]:
 
     Parameters
     ----------
-    arr: numpy.ndarray
-        LxL matrix where the arr[i,j]=1 represents paired bases, otherwise 0
+    mat: numpy.ndarray
+        LxL matrix where the mat[i,j]=1 represents paired bases, otherwise 0
     connects: [int], length L
         The i-th base connects to `connects[i-1]`-th base, 1-indexed, 0 for no connection.
     mode: str
@@ -647,8 +647,8 @@ def arr2scores(arr, connects, mode)->[float]:
             sm_exp = (np.exp(xs)).sum()
             return np.exp(x)/sm_exp
     scores = []
-    for i in range(len(arr)):
-        score = get_pred_score(arr[i], None if connects[i]==0 else connects[i]-1, mode)
+    for i in range(len(mat)):
+        score = get_pred_score(mat[i], None if connects[i]==0 else connects[i]-1, mode)
         scores.append(score)
     return np.array(scores).tolist()
 

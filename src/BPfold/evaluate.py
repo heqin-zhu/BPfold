@@ -8,7 +8,7 @@ import numpy as np
 
 from .util.yaml_config import read_yaml, write_yaml
 from .util.misc import timer, get_file_name
-from .util.RNA_kit import read_SS, connects2arr, dbn2connects, dispart_nc_pairs, merge_connects
+from .util.RNA_kit import read_SS, connects2mat, dbn2connects, dispart_nc_pairs, merge_connects
 from .model.loss_and_metric import cal_metric, cal_metric_pairwise
 
 
@@ -116,8 +116,8 @@ def get_metric_dic(pred_connects, gt_connects, pairwise=True):
         mcc, inf, f1, p, r = cal_metric_pairwise(pred_connects, gt_connects)
         return {'INF': inf, 'F1': f1, 'P': p, 'R': r, 'length': length}
     else:
-        gt = connects2arr(gt_connects)
-        pred = connects2arr(pred_connects)
+        gt = connects2mat(gt_connects)
+        pred = connects2mat(pred_connects)
         mcc, inf, f1, p, r = cal_metric(torch.FloatTensor(pred), torch.FloatTensor(gt))
         return {
                 'INF': inf.detach().cpu().numpy().item(), 
