@@ -7,7 +7,7 @@ name = "BPfold"
 dynamic = ["version"]
 readme = "README.md"
 authors = [
-  { name="Heqin Zhu", email="zhuheqin1@google.com" },
+  { name="Heqin Zhu", email="zhuheqin1@gmail.com" },
 ]
 description = "Deep generalizable prediction of RNA secondary structure via base pair motif energy."
 requires-python = ">=3.8"

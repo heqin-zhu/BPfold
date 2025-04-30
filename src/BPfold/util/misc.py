@@ -1,5 +1,9 @@
 import os
 import time
+import random
+
+import numpy as np
+import torch
 
 
 def str_localtime(str_format="%Y%m%d_%Hh%Mm%Ss"):
@@ -60,3 +64,13 @@ def detect_encoding(path):
         cont = f.read()
         result = chardet.detect(cont)
     return result['encoding']
+
+
+def seed_everything(seed=42):
+    random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = True

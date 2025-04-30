@@ -1,6 +1,5 @@
 import os, gc
 import argparse
-import random
 import math
 
 import numpy as np
@@ -8,10 +7,9 @@ import pandas as pd
 import torch
 from torch.utils.data import DataLoader
 
-from .core import load_eval_checkpoints, seed_everything
 from .dataset import get_dataset
 from .model import get_model
-from .util.misc import get_file_name, str_localtime
+from .util.misc import get_file_name, str_localtime, seed_everything
 from .util.hook_features import hook_features
 from .util.yaml_config import get_config, read_yaml, write_yaml
 from .util.postprocess import postprocess, apply_constraints
@@ -20,6 +18,25 @@ from .util.RNA_kit import read_SS, write_SS, read_fasta, connects2dbn, mat2conne
 
 
 SRC_DIR = os.path.dirname(os.path.realpath(__file__))
+
+
+def load_eval_checkpoints(ckpt_dir, RNA_model, model_opts, device, ckpt_names=None):
+    if not os.path.exists(ckpt_dir):
+        raise Exception(f'[Error] Checkpoint directory not exist: {ckpt_dir}')
+    models = []
+    if ckpt_names is None:
+        ckpt_names = sorted(os.listdir(ckpt_dir))
+    for ckpt_name in ckpt_names:
+        ckpt_path = os.path.join(ckpt_dir, ckpt_name)
+        print(f'Loading {os.path.abspath(ckpt_path)}')
+        model = RNA_model(**model_opts)
+        model = model.to(device)
+        model.load_state_dict(torch.load(ckpt_path, map_location=torch.device('cpu')))
+        model.eval()
+        models.append(model)
+    if models == []:
+        raise Exception(f'[Error] No checkpoint found in {ckpt_dir}')
+    return models
 
 
 class BPfold_predict:
@@ -211,8 +228,10 @@ class BPfold_predict:
             if save_name is None:
                 save_name = os.path.basename(os.path.abspath(save_dir))
             df = pd.DataFrame(pred_results)
+            df.to_csv(connect_path, index=False)
             df['dbn'] = df['connects'].apply(connects2dbn)
-            df_out = df[['seq_name', 'seq', 'dbn', 'CI']]
+            # df_out = df[['seq_name', 'seq', 'dbn', 'CI']]
+            df_out = df
             csv_path = os.path.join(save_dir, f'{save_name}.csv')
             num_digit = math.ceil(math.log(len(df_out), 10))
             for idx, row in enumerate(df_out.itertuples()):
