@@ -228,7 +228,6 @@ class BPfold_predict:
             if save_name is None:
                 save_name = os.path.basename(os.path.abspath(save_dir))
             df = pd.DataFrame(pred_results)
-            df.to_csv(connect_path, index=False)
             df['dbn'] = df['connects'].apply(connects2dbn)
             # df_out = df[['seq_name', 'seq', 'dbn', 'CI']]
             df_out = df
