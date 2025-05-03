@@ -142,8 +142,6 @@ class BPfold_predict:
                         mat_post = ret_pred[i][masks[i]].reshape(length, length).detach().cpu().numpy()
                         np.save(os.path.join(save_data_dir, f'{seq_name}.npy'), mat)
                         np.save(os.path.join(save_data_dir, f'{seq_name}_post.npy'), mat_post)
-                        post_before_th = apply_constraints(pred_batch[i:i+1], seq_onehot[i:i+1], 0.01, 0.1, 100, 1.6, True, 1.5)[0]
-                        np.save(os.path.join(save_data_dir, f'{seq_name}_post_before_th.npy'), post_before_th[masks[i]].reshape(length, length).detach().cpu().numpy())
                     results = {'seq_name': seq_name, 'seq': seqs[i], 'connects': connects, 'CI': CI}
 
                     ## NC pairs

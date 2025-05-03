@@ -117,8 +117,8 @@ class MultiHeadSelfAttention(nn.Module):
         torch.nn.init.xavier_normal_(self.out_w)
 
         if self.bias:
-            self.out_bias = nn.Parameter(torch.empty(1,1,self.hidden_dim)) # QKV
-            self.in_bias = nn.Parameter(torch.empty(1,1, 3*self.hidden_dim)) # QKV
+            self.out_bias = nn.Parameter(torch.empty(1, 1, self.hidden_dim)) # QKV
+            self.in_bias = nn.Parameter(torch.empty(1, 1, 3*self.hidden_dim)) # QKV
             torch.nn.init.constant_(self.out_bias, 0.)
             torch.nn.init.constant_(self.in_bias, 0.)
         if not use_se:
@@ -148,16 +148,28 @@ class MultiHeadSelfAttention(nn.Module):
             attention = attention + attn_bias
         elif self.positional_embedding == "xpos":
             self.xpos = XPOS(self.head_size)
-        
+
         if adj is not None:
             if not self.use_se:
                 adj = self.gamma * adj
             attention = attention + adj
-        
+
         attention = attention.softmax(dim=-1) # b, a, l, l, softmax won't change shape
-        
         if mask is not None:
-            attention = attention*mask.view(b,1,1,-1) 
+            ## (batch_size, seq_len)->(batch_size, seq_len, seq_len) -> (batch_size, num_heads, seq_len, seq_len)
+            ## `&` op can be replaced by torch.bmm, more efficient for large computation. To Fix: "baddbmm_cuda" not implemented for 'Bool'
+            mask2d = (mask.unsqueeze(1) & mask.unsqueeze(2)).unsqueeze(1).repeat(1, self.num_heads, 1, 1)
+            # mask2d = mask.view(b,1,1,-1).repeat(1, self.num_heads, l, 1)  # wrong when broadcasting, reference for reproducing paper data
+            attention = attention*mask2d
+        '''
+        ### Note: Different batch sizes result in slightly different outputs because of padding.
+        ### There are many calculations that are influenced by padding: 
+        1. another way for cal attetion:  attention = attention.masked_fill(~mask2d, float('-inf') => attention.softmax(dim=-1) =>  attention *= mask2d
+        2. the out_bias may be masked: out_bias = out_bias*mask.unsqueeze(-1)
+        3. the adj when apply conv: adj = adj*mask2d
+        Since the differences are small, we ignore it.
+        '''
+
         out = attention @ V  # b, a, l, head
         out = out.permute(0,2,1,3).flatten(2,3) # b, a, l, head -> b, l, (a, head) -> b, l, hidden
         if self.bias:

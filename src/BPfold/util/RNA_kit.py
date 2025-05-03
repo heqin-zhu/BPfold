@@ -434,25 +434,78 @@ def connects2dbn(connects:[int])->str:
     return ''.join(ret)
 
 
-def mat2connects(mat)->[int]:
+def mat2connects(mat, loop_min_len=2)->[int]:
     '''
-    Convert contact map to connects.
+    Convert contact map to connects, enforce single pairing.
 
     Parameters
     ----------
     mat: numpy.ndarray
-        LxL matrix where the mat[i,j]=1 represents paired bases, otherwise 0
+        LxL matrix where the mat[i,j]=score, the biger, the more probable to pair.
 
     Returns
     -------
     connects: [int], length L
         The i-th base connects to `connects[i-1]`-th base, 1-indexed, 0 for no connection.
     '''
+    # enforce single pairing
+    mat = greedy_max_weight_matching(mat)
     connects = mat.argmax(axis=1)
     connects[connects!=0] +=1
     if connects[0]!=0:
         connects[connects[0]-1] = 1
     return connects.tolist()
+
+
+def greedy_max_weight_matching(M):
+    '''
+    Greedy max weight matching, fast, but may not be optimal.
+    '''
+    n = len(M)
+    M_new = np.zeros((n, n), dtype=float)
+    used = set()
+    
+    # Flatten and sort all possible pairs by score (descending)
+    pairs = []
+    for i in range(n):
+        for j in range(i + 1, n):
+            if M[i][j] > 0:
+                pairs.append((M[i][j], i, j))
+    pairs.sort(reverse=True, key=lambda x: x[0])
+    
+    # Assign pairs greedily
+    for score, i, j in pairs:
+        if i not in used and j not in used:
+            M_new[i][j] = score
+            M_new[j][i] = score
+            used.add(i)
+            used.add(j)
+    return M_new
+
+
+def nx_max_weight_matching(M):
+    '''
+    Use pacakge networkx, may be slow when length > 1000.
+    '''
+    import networkx as nx
+    n = len(M)
+    G = nx.Graph()
+    
+    # Add edges with weights (only upper triangle to avoid duplication)
+    for i in range(n):
+        for j in range(i + 1, n):
+            if M[i][j] > 0:
+                G.add_edge(i, j, weight=M[i][j])
+    
+    # Compute maximum weight matching
+    matching = nx.max_weight_matching(G, maxcardinality=False)
+    
+    # Build new contact matrix
+    M_new = np.zeros((n, n), dtype=float)
+    for i, j in matching:
+        M_new[i][j] = M[i][j]
+        M_new[j][i] = M[j][i]
+    return M_new
 
 
 def connects2mat(connects:[int]):

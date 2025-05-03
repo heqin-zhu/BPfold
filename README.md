@@ -90,11 +90,18 @@ For instance, `CAAAAUG_0_6-3 -49.7835` represents motif `CAAAAUG` has a known pa
 >The base pair motif library can be used as thermodynamic priors in other models.
 
 ### BPfold Prediction
-Use BPfold to predict RNA secondary structures. The following are some examples. The `out_type` can be `csv`, `bpseq`, `ct` or `dbn`, which is defaultly set as `csv`.
+Use BPfold to predict RNA secondary structures.
+Args:
+- `--checkpoint_dir`: required, specify checkpoint dir path.
+- `--seq`: specify one or more input RNA sequences.
+- `--input`: specify input file of RNA seqs in format of `.fasta`(multiple seqs are supported), `.bpseq`, `.ct`, or `.dbn`.
+- `--output`: output dir (will be created automatically), default `BPfold_results`.
+- `--out_type`: out format of RNA secondary structures, can be `.csv`, `.bpseq`, `.ct`, or `.dbn`, default `.csv`
+Here are some examples:
 ```shell
 BPfold --checkpoint_dir PATH_TO_CHECKPOINT_DIR --seq GGUAAAACAGCCUGU AGUAGGAUGUAUAUG --output BPfold_results
 BPfold --checkpoint_dir PATH_TO_CHECKPOINT_DIR --input examples/examples.fasta --out_type csv # (multiple sequences are supported)
-BPfold --checkpoint_dir PATH_TO_CHECKPOINT_DIR --input examples/URS0000D6831E_12908_1-117.bpseq # .bpseq, .ct, .dbn
+BPfold --checkpoint_dir PATH_TO_CHECKPOINT_DIR --input examples/URS0000D6831E_12908_1-117.bpseq
 ```
 
 <details>
@@ -104,19 +111,20 @@ BPfold --checkpoint_dir PATH_TO_CHECKPOINT_DIR --input examples/URS0000D6831E_12
 Here are the outputs after running `BPfold --checkpoint_dir model_predict --input examples/examples.fasta --out_type bpseq`:
 ```txt
 >> Welcome to use "BPfold" for predicting RNA secondary structure!
-Loading paras/model_predict/BPfold_1-6.pth
-Loading paras/model_predict/BPfold_2-6.pth
-Loading paras/model_predict/BPfold_3-6.pth
-Loading paras/model_predict/BPfold_4-6.pth
-Loading paras/model_predict/BPfold_5-6.pth
-Loading paras/model_predict/BPfold_6-6.pth
-[    1] saved in "BPfold_results/SS/5s_Shigella-flexneri-3.bpseq", CI=0.980
+Loading model_predict/BPfold_1-6.pth
+Loading model_predict/BPfold_2-6.pth
+Loading model_predict/BPfold_3-6.pth
+Loading model_predict/BPfold_4-6.pth
+Loading model_predict/BPfold_5-6.pth
+Loading model_predict/BPfold_6-6.pth
+[      1] saved in "BPfold_results/5s_Shigella-flexneri-3.bpseq", CI=0.973
 CUGGCGGCAGUUGCGCGGUGGUCCCACCUGACCCCAUGCCGAACUCAGAAGUGAAACGCCGUAGCGCCGAUGGUAGUGUGGGGUCUCCCCAUGCGAGAGUAGGGAACUGCCAG
 (((((((.....((((((((.....((((((.............))))..))....)))))).)).((.((....((((((((...))))))))....)).))...)))))))
-[    2] saved in "BPfold_results/SS/URS0000D6831E_12908_1-117.bpseq", CI=0.931
+[      2] saved in "BPfold_results/URS0000D6831E_12908_1-117.bpseq", CI=0.915
 UUAUCUCAUCAUGAGCGGUUUCUCUCACAAACCCGCCAACCGAGCCUAAAAGCCACGGUGGUCAGUUCCGCUAAAAGGAAUGAUGUGCCUUUUAUUAGGAAAAAGUGGAACCGCCUG
-......((((((..(.(((((.......))))))(((.((((.((......))..))))))).................))))))..(((......)))..................
-Finished!
+......((((((....(((((.......)))).)(((.((((.((......))..))))))).................))))))..(((......)))..................
+Confidence indexes are saved in "BPfold_results_confidence_TIMESTR.yaml"
+Program Finished!
 ```
 
 </details>
@@ -124,7 +132,7 @@ Finished!
 For more help information, please run command `BPfold -h` to see.
 
 ## Reproduction
-For reproduction of all the quantitative results, we provide the predicted secondary structures and model parameters of BPfold in experiments. You can **directly downalod** the predicted secondary structures by BPfold *or* **use BPfold** with trained parameters to predict these secondary structures, and then **evaluate** the predicted results.
+For reproduction of all the quantitative results, we provide the predicted secondary structures and model parameters of BPfold in experiments. You can **directly downalod** the predicted secondary structures by BPfold *or* **use BPfold v0.2.4** with trained parameters to predict these secondary structures, and then **evaluate** the predicted results.
 
 **Directly download**
 ```shell
@@ -137,7 +145,7 @@ tar -xzf BPfold_test_results.tar.gz
 wget https://github.com/heqin-zhu/BPfold/releases/latest/download/model_reproduce.tar.gz
 tar -xzf model_reproduce.tar.gz
 ```
-2. Use BPfold to predict test sequences.
+2. Use BPfold v0.2.4 (`pip install BPfold==0.2.4`) to predict test sequences.
 
 **Evaluate**
 ```shell
