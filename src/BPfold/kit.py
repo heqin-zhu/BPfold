@@ -76,11 +76,17 @@ def main():
         print('BPfold_kit --input data_dir --get_dbn --gt_dir gt_dir')
         print('BPfold_kit --input seq --get_matrix energy')
         exit()
+    os.makedirs(args.output, exist_ok=True)
     save_name = get_file_name(args.input)
+    dest_path = None
     if args.print:
         seq, connects = read_SS(args.input)
+        dbn = connects2dbn(connects)
         print(seq)
-        print(connects2dbn(connects))
+        print(dbn)
+        dest_path = os.path.join(args.output, f'{save_name}.dbn')
+        with open(dest_path, 'w') as fp:
+            fp.write(f'>{save_name}\n{seq}\n{dbn}')
     if args.get_fasta:
         if os.path.isdir(args.input):
             name_seq_pairs = []
@@ -91,21 +97,24 @@ def main():
                     name_seq_pairs.append((name, seq))
         elif args.input.endswith('.csv'):
             df = pd.read_csv(args.input)
-            name_seq_pairs = zip(df[name_col], df[seq_col])
+            name_seq_pairs = zip(df[args.name_col], df[args.seq_col])
         else:
             raise Exception(args.input)
-        os.makedirs(args.output, exist_ok=True)
-        write_fasta(os.path.join(args.output, f'{save_name}.fasta'), name_seq_pairs)
+        dest_path = os.path.join(args.output, f'{save_name}.fasta')
+        write_fasta(dest_path, name_seq_pairs)
     if args.get_dbn:
-        os.makedirs(args.output, exist_ok=True)
-        get_dbn(dest=os.path.join(args.output, f'dbn_{save_name}.txt'), src=args.input, gt_dir=args.gt_dir)
+        dest_path = os.path.join(args.output, f'dbn_{save_name}.txt')
+        get_dbn(dest=dest_path, src=args.input, gt_dir=args.gt_dir)
     if args.get_matrix:
-        os.makedirs(args.output, exist_ok=True)
+        dest_path = args.output
         if os.path.exists(args.input): # fasta file
             get_matrix(args.output, read_fasta(args.input), args.get_matrix)
         else:
             time_str = str_localtime()
             get_matrix(args.output, [(f'seq_{time_str}', args.input)], args.get_matrix) # seq
+
+    if dest_path is not None and os.path.exists(dest_path):
+        print(f'Saving results in "{dest_path}"')
 
 
 if __name__ == '__main__':
