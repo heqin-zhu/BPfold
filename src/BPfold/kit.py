@@ -75,6 +75,7 @@ def main():
         print('BPfold_kit --input data_dir --get_dbn --gt_dir gt_dir')
         print('BPfold_kit --input seq --get_matrix energy')
         exit()
+    save_name = get_file_name(args.input)
     if args.print:
         seq, connects = read_SS(args.input)
         print(seq)
@@ -82,7 +83,6 @@ def main():
     if args.get_fasta:
         if os.path.isdir(args.input):
             name_seq_pairs = []
-            dir_name = os.path.basename(args.input)
             for pre, ds, fs in os.walk(args.input):
                 for f in fs:
                     seq, _ = read_SS(os.path.join(pre, f))
@@ -94,10 +94,10 @@ def main():
         else:
             raise Exception(args.input)
         os.makedirs(args.output, exist_ok=True)
-        write_fasta(os.path.join(args.output, f'{dir_name}.fasta'), name_seq_pairs)
+        write_fasta(os.path.join(args.output, f'{save_name}.fasta'), name_seq_pairs)
     if args.get_dbn:
         os.makedirs(args.output, exist_ok=True)
-        get_dbn(dest=os.path.join(args.output, f'dbn_{os.path.basename(args.input)}.txt'), src=args.input, gt_dir=args.gt_dir)
+        get_dbn(dest=os.path.join(args.output, f'dbn_{save_name}.txt'), src=args.input, gt_dir=args.gt_dir)
     if args.get_matrix:
         os.makedirs(args.output, exist_ok=True)
         if os.path.exists(args.input): # fasta file
