@@ -39,6 +39,7 @@ Issues = "https://github.com/heqin-zhu/BPfold/issues"
 [project.scripts]
 BPfold = "BPfold.predict:main"
 BPfold_eval = "BPfold.evaluate:main"
+BPfold_kit = "BPfold.kit:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
