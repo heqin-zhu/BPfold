@@ -313,6 +313,9 @@ def main():
     pred_results = BPfold_predictor.predict(args.seq, args.input, args.batch_size, args.num_workers, args.hook_features, args.save_contact_map, save_nc=args.save_nc)
     save_name = get_file_name(args.input) if args.input else None
     BPfold_predictor.save_pred_results(pred_results, save_dir=args.output, save_name=save_name, out_type=args.out_type)
+    del BPfold_predictor
+    gc.collect()
+    torch.cuda.empty_cache()
     print('Program Finished!')
 
 
