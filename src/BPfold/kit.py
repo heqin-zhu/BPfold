@@ -3,6 +3,7 @@ import argparse
 
 import tqdm
 import numpy as np
+import pandas as pd
 
 from .util.base_pair_motif import BPM_energy
 from .util.misc import get_file_name, str_localtime
@@ -89,7 +90,7 @@ def main():
                     name = get_file_name(f)
                     name_seq_pairs.append((name, seq))
         elif args.input.endswith('.csv'):
-            df = read_csv(args.input)
+            df = pd.read_csv(args.input)
             name_seq_pairs = zip(df[name_col], df[seq_col])
         else:
             raise Exception(args.input)
