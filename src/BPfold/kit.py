@@ -39,10 +39,12 @@ def parse_args():
     parser.add_argument('-i', '--input', type=str)
     parser.add_argument('-o', '--output', type=str, default='BPfold_kit_results')
     parser.add_argument('--print', action='store_true', help='print seq and SS')
-    parser.add_argument('--gen_fasta', action='store_true')
+    parser.add_argument('--get_fasta', action='store_true')
     parser.add_argument('--get_dbn', action='store_true', help='Meanwhile specify --gt_dir, saved in "./dbn_dataname.txt"')
     parser.add_argument('--get_matrix', type=str, choices=['energy', 'probability', ''], default='', help='input seq in shape of L, if energy: output nomralized outer BPM and inner BPM in shape of (2, L, L); if probability: output reference probability converted from energy in shape of (1, L, L).')
     parser.add_argument('--gt_dir', type=str)
+    parser.add_argument('--name_col', type=str, default='target_id')
+    parser.add_argument('--seq_col', type=str, default='sequence')
     parser.add_argument('--show_examples', action='store_true', help='Show examples and exit.')
     args = parser.parse_args()
     return args
@@ -66,24 +68,31 @@ def get_matrix(dest, name_seq_pairs, tag='energy'):
 def main():
     args = parse_args()
     if args.show_examples:
-        print('python3 -m src.BPfold.kit --input example.bpseq --print')
-        print('python3 -m src.BPfold.kit --input data_dir --gen_fasta')
-        print('python3 -m src.BPfold.kit --input data_dir --get_dbn')
-        print('python3 -m src.BPfold.kit --input data_dir --get_dbn --gt_dir gt_dir')
-        print('python3 -m src.BPfold.kit --input seq --get_matrix energy')
+        print('BPfold_kit --input example.bpseq --print')
+        print('BPfold_kit --input data_dir --get_fasta')
+        print('BPfold_kit --input data.csv --get_fasta --name_col target_id --seq_col sequence')
+        print('BPfold_kit --input data_dir --get_dbn')
+        print('BPfold_kit --input data_dir --get_dbn --gt_dir gt_dir')
+        print('BPfold_kit --input seq --get_matrix energy')
         exit()
     if args.print:
         seq, connects = read_SS(args.input)
         print(seq)
         print(connects2dbn(connects))
-    if args.gen_fasta:
-        dir_name = os.path.basename(args.input)
-        name_seq_pairs = []
-        for pre, ds, fs in os.walk(args.input):
-            for f in fs:
-                seq, _ = read_SS(os.path.join(pre, f))
-                name = get_file_name(f)
-                name_seq_pairs.append((name, seq))
+    if args.get_fasta:
+        if os.path.isdir(args.input):
+            name_seq_pairs = []
+            dir_name = os.path.basename(args.input)
+            for pre, ds, fs in os.walk(args.input):
+                for f in fs:
+                    seq, _ = read_SS(os.path.join(pre, f))
+                    name = get_file_name(f)
+                    name_seq_pairs.append((name, seq))
+        elif args.input.endswith('.csv'):
+            df = read_csv(args.input)
+            name_seq_pairs = zip(df[name_col], df[seq_col])
+        else:
+            raise Exception(args.input)
         os.makedirs(args.output, exist_ok=True)
         write_fasta(os.path.join(args.output, f'{dir_name}.fasta'), name_seq_pairs)
     if args.get_dbn:
