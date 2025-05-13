@@ -2,9 +2,6 @@ import os
 import time
 import random
 
-import numpy as np
-import torch
-
 
 def str_localtime(str_format="%Y%m%d_%Hh%Mm%Ss"):
     return time.strftime(str_format, time.localtime())
@@ -67,6 +64,8 @@ def detect_encoding(path):
 
 
 def seed_everything(seed=42):
+    import torch
+    import numpy as np
     random.seed(seed)
     os.environ['PYTHONHASHSEED'] = str(seed)
     np.random.seed(seed)
