@@ -77,7 +77,10 @@ def main():
         print('BPfold_kit --input seq --get_matrix energy')
         exit()
     os.makedirs(args.output, exist_ok=True)
-    save_name = get_file_name(args.input)
+    if os.path.isdir(args.input):
+        save_name = os.path.basename(args.input)
+    else:
+        save_name = get_file_name(args.input)
     dest_path = None
     if args.print:
         seq, connects = read_SS(args.input)
