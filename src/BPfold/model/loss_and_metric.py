@@ -144,3 +144,10 @@ class myMetric(Metric):
     @property
     def name(self):
         return self.metric_name
+
+
+def  get_loss(s):
+    return {
+            'bce': BCE_loss,
+            'mse': MSE_loss,
+           }[s.lower()]
