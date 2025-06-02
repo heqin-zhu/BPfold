@@ -14,13 +14,14 @@
     ·
     <a href="https://scholar.google.com/citations?user=8eNm2GMAAAAJ"><strong>S. Kevin Zhou*</strong></a>
   </p>
-  <h2 align="center">Submitted</h2>
+  <!--<h2 align="center">Submitted</h2>-->
   <div align="center">
-    <img src="base_pair_motif.png", width="800">
+    <img src="images/BPfold.png", width="800">
   </div>
   <p align="center">
     <a href="https://doi.org/10.1101/2024.10.22.619430">bioRxiv</a> | 
     <a href="https://www.biorxiv.org/content/10.1101/2024.10.22.619430.full.pdf">PDF</a> |
+    <a href="https://heqin-zhu.github.io/files/poster_BPfold.pdf">poster</a> |
     <a href="https://github.com/heqin-zhu/BPfold">GitHub</a> |
     <a href="https://pypi.org/project/BPfold">PyPI</a>
     
@@ -46,7 +47,6 @@
 <!-- vim-markdown-toc -->
 
 ## Introduction
-![overview](overview.png)
 Deep learning methods have demonstrated great performance for RNA secondary structure prediction. However, generalizability is a common unsolved issue on unseen out-of-distribution RNA families, which hinders further improvement of the accuracy and robustness of deep learning methods. Here we construct a base pair motif library that enumerates the complete space of locally adjacent three-neighbor base pair and records the thermodynamic energy of corresponding base pair motifs through _de novo_ modeling of tertiary structures, and we further develop a deep learning approach for RNA secondary structure prediction, named BPfold, which learns relationship between RNA sequence and the energy map of base pair motif. Experiments on sequence-wise and family-wise datasets have demonstrated the great superiority of BPfold compared to other state-of-the-art approaches in accuracy and generalizability. We hope this work contributes to integrating physical priors and deep learning methods for the further discovery of RNA structures and functionalities.
 
 
@@ -132,20 +132,24 @@ Program Finished!
 For more help information, please run command `BPfold -h` to see.
 
 ## Reproduction
-For reproduction of all the quantitative results, we provide the predicted secondary structures and model parameters of BPfold in experiments. You can **directly downalod** the predicted secondary structures by BPfold *or* **use BPfold v0.2.4** with trained parameters to predict these secondary structures, and then **evaluate** the predicted results.
+For reproduction of all the quantitative results, we provide the predicted secondary structures and model parameters of BPfold in experiments. You can **directly downalod** the predicted secondary structures by BPfold *or* **use BPfold v0.2.0** with trained parameters to predict these secondary structures, and then **evaluate** the predicted results.
 
 **Directly download**
 ```shell
-wget https://github.com/heqin-zhu/BPfold/releases/latest/download/BPfold_test_results.tar.gz
+wget https://github.com/heqin-zhu/BPfold/releases/download/v0.2/BPfold_test_results.tar.gz
 tar -xzf BPfold_test_results.tar.gz
 ```
 **Use BPfold**
-1. Download [BPfold_reproduce.tar.gz](https://github.com/heqin-zhu/BPfold/releases/latest/download/BPfold_reproduce.pth) in [releases](https://github.com/heqin-zhu/BPfold/releases).
+1. Download the checkpoints of BPfold: [BPfold_reproduce.tar.gz](https://github.com/heqin-zhu/BPfold/releases/download/v0.2/model_reproduce.tar.gz).
 ```shell
-wget https://github.com/heqin-zhu/BPfold/releases/latest/download/model_reproduce.tar.gz
+wget https://github.com/heqin-zhu/BPfold/releases/download/v0.2/model_reproduce.tar.gz
 tar -xzf model_reproduce.tar.gz
 ```
-2. Use BPfold v0.2.4 (`pip install BPfold==0.2.4`) to predict test sequences.
+2. Install BPfold v<=0.2.4.
+```shell
+pip install BPfold==0.2.4
+```
+3. Use BPfold to predict RNA sequences in test datasets.
 
 **Evaluate**
 ```shell

@@ -434,7 +434,7 @@ def connects2dbn(connects:[int])->str:
     return ''.join(ret)
 
 
-def mat2connects(mat, loop_min_len=2)->[int]:
+def mat2connects(mat, loop_min_len=2, greedy_max_matching=True)->[int]:
     '''
     Convert contact map to connects, enforce single pairing.
 
@@ -448,8 +448,9 @@ def mat2connects(mat, loop_min_len=2)->[int]:
     connects: [int], length L
         The i-th base connects to `connects[i-1]`-th base, 1-indexed, 0 for no connection.
     '''
-    # enforce single pairing
-    mat = greedy_max_weight_matching(mat)
+    if greedy_max_matching:
+        # enforce single pairing
+        mat = greedy_max_weight_matching(mat)
     connects = mat.argmax(axis=1)
     connects[connects!=0] +=1
     if connects[0]!=0:
