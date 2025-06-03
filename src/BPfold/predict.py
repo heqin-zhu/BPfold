@@ -179,6 +179,8 @@ class BPfold_predict:
                 print(f'[Warning] Unknown file type, ignored: {file_path}')
 
         if input_seqs:
+            if isinstance(input_seqs, str):
+                input_seqs = [input_seqs]
             time_str = str_localtime()
             for idx, seq in enumerate(input_seqs):
                 seq_name = f'seq_{time_str}_{idx+1}'
