@@ -5,6 +5,7 @@ import numpy as np
 from fastai.vision.all import Metric
 
 from ..util.postprocess import postprocess
+from ..util.RNA_kit import _cal_metric_from_tp
 
 
 def cal_loss(loss_func, pred, gt_dic, **args):
@@ -30,31 +31,7 @@ def BCE_loss(pos_weight=300, device=None, **args):
     return partial(cal_loss, loss_func)
 
 
-def _cal_metric_from_tp(length, pred_p, gt_p, tp, eps=1e-12):
-    '''
-        accuracy: acc = (TP+TN)/(TP+FP+FN+TN)
-        precision: p = TP/(TP+FP)
-        recall: r = TP/(TP+FN)
-        F1: F1 = 2*p*r / (p+r)
-        sensitivity = recal = TPR (true positive rate)
-        specificity = TN/(TN+FP)
-        YoudenIndex = sen + spe - 1
-        false positive rate: FPR = FP/(TN+FP) = 1-spe
-        positive predicted value: PPV = precision
-        negative predicted value: NPV = TN/(TN+FN)
-    '''
-    fp = pred_p - tp
-    fn = gt_p - tp
-    recall = (tp + eps)/(tp+fn+eps)
-    precision = (tp + eps)/(tp+fp+eps)
-    f1_score = (2*tp + eps)/(2*tp + fp + fn + eps)
-    tn = length - tp - fp - fn
-    mcc = (tp * tn - fp * fn + eps)/(((tp+fp)*(tp+fn)*(tn+fp)*(tn+fn))**0.5+eps)
-    inf = (precision*recall)**0.5
-    return mcc, inf, f1_score, precision, recall
-
-
-def cal_metric(pred, gt):
+def cal_metric_torch(pred, gt):
     '''
         pred, gt: torch.Tensor
         return: MCC, INF, F1, precision, recall
@@ -63,25 +40,6 @@ def cal_metric(pred, gt):
     gt_p = gt.sum()
     tp = torch.sign(pred*gt).sum()
     return _cal_metric_from_tp(torch.flatten(pred).shape[0], pred_p, gt_p, tp)
-
-
-def cal_metric_pairwise(pred_pairs:[int], gt_pairs:[int]):
-    '''
-        pred_pairs, gt_pairs: connections, 1-indexed
-        return: MCC, INF, F1, precision, recall
-    '''
-    length = len(pred_pairs)
-    if length!=len(gt_pairs):
-        raise Exception(f'[Error]: lengthes dismatch: pred {length}!= gt {len(gt_pairs)}')
-    pred_p = gt_p = tp = 0 # predpair, gtpair, paired
-    for pred, gt in zip(pred_pairs, gt_pairs):
-        if gt!=0:
-            gt_p +=1
-        if pred!=0:
-            pred_p +=1
-            if pred==gt:
-                tp +=1
-    return _cal_metric_from_tp(length, pred_p, gt_p, tp)
 
 
 def cal_metric_batch(pred, gt, mask=None, seq_names=None, dataset_names=None):
@@ -96,15 +54,8 @@ def cal_metric_batch(pred, gt, mask=None, seq_names=None, dataset_names=None):
         seq_name = seq_names[i]
         cur_pred = pred[i] if mask is None else pred[i][mask[i]]
         cur_gt = gt[i] if mask is None else gt[i][mask[i]]
-        MCC, INF, f1, p, r = cal_metric(cur_pred, cur_gt)
-        metric_dic[dataset_name][seq_name] = \
-                {
-                 'MCC': MCC.detach().cpu().numpy().item(),
-                 'INF': INF.detach().cpu().numpy().item(),
-                 'F1': f1.detach().cpu().numpy().item(),
-                 'P': p.detach().cpu().numpy().item(),
-                 'R': r.detach().cpu().numpy().item(),
-        }
+        m_dic = cal_metric_torch(cur_pred, cur_gt)
+        metric_dic[dataset_name][seq_name] = {k: v.detach().cpu().numpy().item() for k, v in m_dic.items()}
     return metric_dic
 
 

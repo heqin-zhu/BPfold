@@ -8,8 +8,7 @@ import numpy as np
 
 from .util.yaml_config import read_yaml, write_yaml
 from .util.misc import timer, get_file_name
-from .util.RNA_kit import read_SS, connects2mat, dbn2connects, dispart_nc_pairs, merge_connects
-from .model.loss_and_metric import cal_metric, cal_metric_pairwise
+from .util.RNA_kit import read_SS, dispart_nc_pairs, merge_connects, cal_metric
 
 
 def get_index_data(gt_dir, testsets):
@@ -49,7 +48,7 @@ def get_index_data(gt_dir, testsets):
 
 
 @timer
-def evaluate(dest_path:str, pred_dir:str, gt_dir:str, pairwise:bool=True, read_pred=None, testsets=None, show_nc=False)->None:
+def evaluate(dest_path:str, pred_dir:str, gt_dir:str, read_pred=None, testsets=None, show_nc=False)->None:
     '''
     Cal metrics of predicted SS in pred_dir and gt_dir, then save results in dest_path (.yaml).
 
@@ -82,7 +81,7 @@ def evaluate(dest_path:str, pred_dir:str, gt_dir:str, pairwise:bool=True, read_p
                     seq, pred_connects, gt_connects = get_seq_and_pred_gt_connects(pred_path, gt_path, read_pred)
                     canonical_pred, nc_pred = dispart_nc_pairs(seq, pred_connects)
                     canonical_gt, nc_gt = dispart_nc_pairs(seq, gt_connects)
-                    metric_dic[dataset][name] = get_metric_dic(canonical_pred, canonical_gt, pairwise)
+                    metric_dic[dataset][name] = get_metric_dic(canonical_pred, canonical_gt)
                     if dataset.startswith('PDB_test'): # or any([i!=0 for i in nc_pred]):
                         # nc: non-canonical
                         nc_pred_path = os.path.join(os.path.dirname(pred_path), get_file_name(pred_path) + '_nc.bpseq')
@@ -98,10 +97,10 @@ def evaluate(dest_path:str, pred_dir:str, gt_dir:str, pairwise:bool=True, read_p
                             cur_dataset_str = dataset + flag
                             if cur_dataset_str not in metric_dic:
                                 metric_dic[cur_dataset_str] = {}
-                            metric_dic[cur_dataset_str][name] = get_metric_dic(pred_gt_dic[flag]['pred'], pred_gt_dic[flag]['gt'], pairwise)
+                            metric_dic[cur_dataset_str][name] = get_metric_dic(pred_gt_dic[flag]['pred'], pred_gt_dic[flag]['gt'])
                     break
             else: # No pred results
-                metric_dic[dataset][name] = {k: None for k in ['INF', 'F1', 'P', 'R', 'length']}
+                metric_dic[dataset][name] = {k: None for k in ['MCC', 'INF', 'F1', 'Precision', 'Recall', 'length']}
                 missing_pred[name] = {'name': name, 'pred_dir': pred_dir, 'dataset': dataset}
     if missing_pred:
         print('missing pred', len(missing_pred))
@@ -110,23 +109,11 @@ def evaluate(dest_path:str, pred_dir:str, gt_dir:str, pairwise:bool=True, read_p
     write_yaml(dest_path, metric_dic)
 
 
-def get_metric_dic(pred_connects, gt_connects, pairwise=True):
+def get_metric_dic(pred_connects, gt_connects):
     length = len(gt_connects)
-    if pairwise:
-        mcc, inf, f1, p, r = cal_metric_pairwise(pred_connects, gt_connects)
-        return {'INF': inf, 'F1': f1, 'P': p, 'R': r, 'length': length}
-    else:
-        gt = connects2mat(gt_connects)
-        pred = connects2mat(pred_connects)
-        mcc, inf, f1, p, r = cal_metric(torch.FloatTensor(pred), torch.FloatTensor(gt))
-        return {
-                'INF': inf.detach().cpu().numpy().item(), 
-                'F1': f1.detach().cpu().numpy().item(), 
-                'P': p.detach().cpu().numpy().item(), 
-                'R': r.detach().cpu().numpy().item(), 
-                'length': length,
-                }
-
+    m_dic = cal_metric(pred_connects, gt_connects)
+    m_dic['length'] = length
+    return m_dic
 
 def get_seq_and_pred_gt_connects(pred_path, gt_path, read_pred=None):
     '''
@@ -167,14 +154,14 @@ def summary(path, to_latex=True):
             else:
                 metric_dic_gt600[dataset][name] = d
 
-    metric_names = ['INF', 'F1', 'P', 'R']
+    metric_names = ['INF', 'F1', 'Precision', 'Recall']
     pred_and_all = sorted([(dataset, len(metric_dic[dataset]),len(d)) for dataset, d in metric_dic_all.items()])
 
     outputs = []
     outputs.append(f'[Summary] {path}')
     outputs.append(f' Pred/Total num: {pred_and_all}')
     for tag, cur_dic in [('len>600', metric_dic_gt600), ('len<=600', metric_dic_le600), ('all', metric_dic)]:
-        title_row = format_row(['dataset', 'num', 'INF', 'F1', 'P', 'R'], [15, 5, 5, 5, 5, 5])
+        title_row = format_row(['dataset', 'num', 'INF', 'F1', 'Precision', 'Recall'], [15, 5, 5, 5, 5, 5])
         length = (len(title_row) - len(tag))//2
         outputs.append('-'*length + tag + '-'*(len(title_row) - length - len(tag)))
         outputs.append(title_row)

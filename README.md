@@ -198,7 +198,7 @@ We appreciate the following open source projects:
 [MIT LICENSE](LICENSE)
 
 ## Citation
-If you use our code, please kindly consider to cite our paper:
+If you use our code, please cite the following paper:
 ```bibtex
 @article {Zhu2024.10.22.619430,
     author = {Zhu, Heqin and Tang, Fenghe and Quan, Quan and Chen, Ke and Xiong, Peng and Zhou, S. Kevin},

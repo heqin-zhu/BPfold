@@ -831,3 +831,50 @@ def cos_row(mat1, mat2, scale_k:float=1, scale_b:float=0, ceiling_01:bool=True)-
             return min(CEILING, max(FLOOR, CI))
         else:
             return CI
+
+
+def _cal_metric_from_tp(length, pred_p, gt_p, tp, eps=1e-12):
+    '''
+        pred_p, gt_p, tp can be tensors, can be on GPUs
+
+        accuracy: acc = (TP+TN)/(TP+FP+FN+TN)
+        precision: p = TP/(TP+FP)
+        recall: r = TP/(TP+FN)
+        F1: F1 = 2*p*r / (p+r)
+        sensitivity = recal = TPR (true positive rate)
+        specificity = TN/(TN+FP)
+        YoudenIndex = sen + spe - 1
+        false positive rate: FPR = FP/(TN+FP) = 1-spe
+        positive predicted value: PPV = precision
+        negative predicted value: NPV = TN/(TN+FN)
+    '''
+    fp = pred_p - tp
+    fn = gt_p - tp
+    tn = length - tp - fp - fn
+    metric_dic = {
+            'F1': (2*tp + eps)/(2*tp + fp + fn + eps),
+            'MCC': (tp * tn - fp * fn + eps)/(((tp+fp)*(tp+fn)*(tn+fp)*(tn+fn))**0.5+eps),
+            'Precision': (tp + eps)/(tp+fp+eps),
+            'Recall': (tp + eps)/(tp+fn+eps),
+           }
+    metric_dic['INF'] = (metric_dic['Precision']*metric_dic['Recall'])**0.5
+    return metric_dic
+
+
+def cal_metric(pred_pairs:[int], gt_pairs:[int]):
+    '''
+        pred_pairs, gt_pairs: connections, 1-indexed
+        return: MCC, INF, F1, precision, recall
+    '''
+    length = len(pred_pairs)
+    if length!=len(gt_pairs):
+        raise Exception(f'[Error]: lengthes dismatch: pred {length}!= gt {len(gt_pairs)}')
+    pred_p = gt_p = tp = 0 # predpair, gtpair, paired
+    for pred, gt in zip(pred_pairs, gt_pairs):
+        if gt!=0:
+            gt_p +=1
+        if pred!=0:
+            pred_p +=1
+            if pred==gt:
+                tp +=1
+    return _cal_metric_from_tp(length, pred_p, gt_p, tp)
