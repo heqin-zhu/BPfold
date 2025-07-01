@@ -19,8 +19,8 @@
     <img src="images/BPfold.png", width="800">
   </div>
   <p align="center">
-    <a href="https://doi.org/10.1101/2024.10.22.619430">bioRxiv</a> | 
-    <a href="https://www.biorxiv.org/content/10.1101/2024.10.22.619430.full.pdf">PDF</a> |
+    <a href="https://www.nature.com/articles/s41467-025-60048-1">Paper</a> | 
+    <a href="https://www.nature.com/articles/s41467-025-60048-1.pdf">PDF</a> |
     <a href="https://heqin-zhu.github.io/files/poster_BPfold.pdf">poster</a> |
     <a href="https://github.com/heqin-zhu/BPfold">GitHub</a> |
     <a href="https://pypi.org/project/BPfold">PyPI</a>
@@ -200,15 +200,17 @@ We appreciate the following open source projects:
 ## Citation
 If you use our code, please cite the following paper:
 ```bibtex
-@article {Zhu2024.10.22.619430,
+@article{BPfold,
+    title = {Deep generalizable prediction of {RNA} secondary structure via base pair motif energy},
     author = {Zhu, Heqin and Tang, Fenghe and Quan, Quan and Chen, Ke and Xiong, Peng and Zhou, S. Kevin},
-    title = {Deep generalizable prediction of RNA secondary structure via base pair motif energy},
-    elocation-id = {2024.10.22.619430},
-    year = {2024},
-    doi = {10.1101/2024.10.22.619430},
-    publisher = {Cold Spring Harbor Laboratory},
-    URL = {https://www.biorxiv.org/content/early/2024/10/25/2024.10.22.619430},
-    eprint = {https://www.biorxiv.org/content/early/2024/10/25/2024.10.22.619430.full.pdf},
-    journal = {bioRxiv}
+    volume = {16},
+    issn = {2041-1723},
+    url = {https://doi.org/10.1038/s41467-025-60048-1},
+    doi = {10.1038/s41467-025-60048-1},
+    number = {1},
+    journal = {Nature Communications},
+    month = jul,
+    year = {2025},
+    pages = {5856},
 }
 ```
