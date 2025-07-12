@@ -37,7 +37,7 @@
     * [Requirements](#requirements)
     * [Instructions](#instructions)
 * [Usage](#usage)
-    * [BPfold motif library](#bpfold-motif-library)
+    * [Base pair motif library](#base-pair-motif-library)
     * [BPfold Prediction](#bpfold-prediction)
 * [Reproduction](#reproduction)
 * [Acknowledgement](#acknowledgement)
@@ -82,12 +82,27 @@ tar -xzf BPfold_data.tar.gz
 ```
 
 ## Usage
-### BPfold motif library
+### Base pair motif library
 The base pair motif library is publicly available in [releases](https://github.com/heqin-zhu/BPfold/releases), which contains the `motif`:`energy` pairs. The motif is represented as `sequence`\_`pairIdx`\_`pairIdx`\-`chainBreak` where pairIdx is 0-indexed, and the energy is a reference score of statistical and physical thermodynamic energy.
 For instance, `CAAAAUG_0_6-3 -49.7835` represents motif `CAAAAUG` has a known pair `C-G` whose indexes are `0` and `6`, with chainBreak lying at position `3`.
 
 >[!NOTE]
 >The base pair motif library can be used as thermodynamic priors in other models.
+
+For an input RNA sequence `seq`, the base pair motif energy matrix `mat` can be directly obatined as follows:
+```python3
+from BPfold.util.base_pair_motif import BPM_energy
+
+BPM = BPM_energy()
+
+seq = 'AUGCGUAGTa'
+# default, recommended, normed to [-1, 1], BPfold used, shape 2xLxL
+mat = BPM.get_energy(seq)
+
+# origin energy, value may be -50.3, 49.7, ..., shape 1xLxL
+mat2 = BPM.get_energy(seq, normalize_energy=False, dispart_outer_inner=False)
+```
+
 
 ### BPfold Prediction
 Use BPfold to predict RNA secondary structures.

@@ -212,7 +212,8 @@ class BPM_energy:
         energy_map: np.ndarray
         '''
         assert BPM_type in ['all', 'BPM_iH', 'BPM_iCB', 'BPM_oCB'], f'[Error] Unknown BPM type: {BPM_type}'
-        seq = seq.upper()
+        seq = seq.upper().replace('T', 'U')
+        assert set(seq).issubset(set('AUGC')), f'Unknown base: seq="{seq}", should be A, U, G, C'
         canonical_pairs = {'AU', 'UA', 'GC', 'CG', 'GU', 'UG'}
         L= len(seq)
         mat = np.zeros((2, L, L)) if dispart_outer_inner else np.zeros((1, L, L))
@@ -257,7 +258,7 @@ class BPM_energy:
 
 if __name__ == '__main__':
     BPM_ene = BPM_energy()
-    seq_lst = ['AU', 'AUU', 'UG', 'AA', 'AUGAC', 'AUGCGUUCCAU']
+    seq_lst = ['AU', 'AUU', 'UG', 'AA', 'AUGAC', 'AUGCGUUCCAUTUGNa']
     for seq in seq_lst:
         print(seq)
         mat = BPM_ene.get_energy(seq)
