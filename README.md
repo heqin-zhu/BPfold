@@ -35,7 +35,8 @@
 * [Introduction](#introduction)
 * [Installation](#installation)
     * [Requirements](#requirements)
-    * [Instructions](#instructions)
+    * [Use base pair motif library](#use-base-pair-motif-library)
+    * [Predict RNA secondary structure](#predict-rna-secondary-structure)
 * [Usage](#usage)
     * [Base pair motif library](#base-pair-motif-library)
     * [BPfold Prediction](#bpfold-prediction)
@@ -55,7 +56,11 @@ Deep learning methods have demonstrated great performance for RNA secondary stru
 - python3.8+
 - anaconda
 
-### Instructions
+### Use base pair motif library
+```shell
+pip3 install BPfold
+```
+### Predict RNA secondary structure
 0. Clone this repo
 ```shell
 git clone git@github.com:heqin-zhu/BPfold.git
@@ -68,14 +73,14 @@ conda activate BPfold
 ```
 2. Install BPfold
 ```shell
-pip3 install BPfold --index-url https://pypi.org/simple
+pip3 install BPfold
 ```
 3. Download [model_predict.tar.gz](https://github.com/heqin-zhu/BPfold/releases/latest/download/model_predict.tar.gz) in [releases](https://github.com/heqin-zhu/BPfold/releases) and decompress it.
 ```shell
 wget https://github.com/heqin-zhu/BPfold/releases/latest/download/model_predict.tar.gz
 tar -xzf model_predict.tar.gz
 ```
-4. Optional: Download datasets [BPfold_data.tar.gz](https://github.com/heqin-zhu/BPfold/releases/latest/download/BPfold_data.tar.gz) in [releases](https://github.com/heqin-zhu/BPfold/releases) and decompress them.
+4. Optional (for training and evaluation): Download datasets [BPfold_data.tar.gz](https://github.com/heqin-zhu/BPfold/releases/latest/download/BPfold_data.tar.gz) in [releases](https://github.com/heqin-zhu/BPfold/releases) and decompress them.
 ```shell
 wget https://github.com/heqin-zhu/BPfold/releases/latest/download/BPfold_data.tar.gz
 tar -xzf BPfold_data.tar.gz 
@@ -213,7 +218,7 @@ We appreciate the following open source projects:
 [MIT LICENSE](LICENSE)
 
 ## Citation
-If you use our code, please cite the following paper:
+If you find our work helpful, please cite our paper:
 ```bibtex
 @article{BPfold,
     title = {Deep generalizable prediction of {RNA} secondary structure via base pair motif energy},
