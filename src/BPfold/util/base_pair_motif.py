@@ -3,6 +3,8 @@ from itertools import product
 
 import numpy as np
 
+from .RNA_kit import mut_seq
+
 
 SRC_DIR = os.path.dirname(os.path.realpath(__file__))
 BPM_path = os.path.join(os.path.dirname(SRC_DIR), 'paras', 'key.energy')
@@ -212,7 +214,7 @@ class BPM_energy:
         energy_map: np.ndarray
         '''
         assert BPM_type in ['all', 'BPM_iH', 'BPM_iCB', 'BPM_oCB'], f'[Error] Unknown BPM type: {BPM_type}'
-        seq = seq.upper().replace('T', 'U')
+        seq = mut_seq(seq)
         assert set(seq).issubset(set('AUGC')), f'Unknown base: seq="{seq}", should be A, U, G, C'
         canonical_pairs = {'AU', 'UA', 'GC', 'CG', 'GU', 'UG'}
         L= len(seq)

@@ -1,3 +1,5 @@
+import re
+
 import numpy as np
 
 from .misc import get_file_name
@@ -148,23 +150,20 @@ def read_ct(path:str, return_index:bool=False):
     connects = []
     indexes = []
     last_idx = 0
-    with open(path) as f:
-        for i, line in enumerate(f.readlines()):
-            if line.startswith('#'):
-                continue
-            items = [item for item in line.strip('\n\t\r ').split() if item]
-            if len(items)!=6:
-                continue
-            idx, base, prev_one, next_one, conn, cur = items
+    pattern = r'(?P<idx>\d+)[\t ]+(?P<base>.)[\t ]+(?P<pre>\d+)[\t ]+(?P<nxt>\d+)[\t ]+(?P<conn>-?\d+)[\t ]+(?P<cur>\d+)'
+    with open(path) as fp:
+        for idx, base, pre, nxt, conn, cur in re.findall(pattern, fp.read()):
+            # print(idx, base, pre, nxt, conn, cur)
             try:
-                assert int(next_one)==0 or int(cur) == int(next_one)-1 == int(prev_one)+1
-                assert base.isalpha()
-            except:
+                assert int(nxt)==0 or (int(cur) == int(nxt)-1 == int(pre)+1)
+            except Exception as e:
+                print(e)
                 continue
             idx, conn = int(idx), int(conn)
+            if conn < 0:
+                conn = 0
             if idx!=last_idx+1:
-                print(f'[Warning] Parsing "{path}" paused, only read {last_idx} lines. The file may be broken or contain multiple structures.')
-                break
+                raise Exception(f'[Error] Inconsistent bases (line={last_idx}): {path}')
             last_idx = idx
             bases.append(base)
             connects.append(conn)
@@ -509,7 +508,7 @@ def nx_max_weight_matching(M):
     return M_new
 
 
-def connects2mat(connects:[int]):
+def connects2mat(connects:[int], strict=True):
     '''
     Convert connects to contact map.
 
@@ -517,6 +516,8 @@ def connects2mat(connects:[int]):
     ----------
     connects: [int], length L
         The i-th base connects to `connects[i-1]`-th base, 1-indexed, 0 for no connection.
+    strict: bool
+        if not strict, ignore invalid connects (that exceeds L)
 
     Returns
     -------
@@ -527,6 +528,8 @@ def connects2mat(connects:[int]):
     ret = np.zeros((L, L))
     for num, conn in zip(range(1, L+1), connects):
         if conn!=0:
+            if (conn-1>=L or num-1 >= L) and not strict:
+                continue
             ret[num-1][conn-1] = ret[conn-1][num-1] = 1
     return ret
 
@@ -599,7 +602,7 @@ def write_react(path, reacts, seq=None, delimiter=' '):
 
 
 def valid_ss(seq:str, connects:[int], indexes:[int]=None)->bool:
-    return len(seq)>4 and len(seq) == len(connects) and min(connects)>=0 and max(connects)<=len(seq) and (indexes is None or indexes==list(range(1, 1+len(seq))))
+    return len(seq)>10 and len(seq) == len(connects) and min(connects)>=0 and max(connects)<=len(seq) and (indexes is None or indexes==list(range(1, 1+len(seq))))
 
 
 def is_valid_bracket(s, ignore_unknown=False):
@@ -637,11 +640,12 @@ def mut_seq(seq:str, connects=None)->str:
     new_seq: str, length L
         Containing RNA bases AUGC only.
     '''
+    seq = seq.upper().replace('T', 'U')
+    if set(seq).issubset(set('AUGC')):
+        return seq
     new_seq = []
     chars = {'A', 'U', 'G', 'C'}
     conj = {'A': 'U', 'U': 'A', 'G': 'C', 'C': 'G'}
-    if set(seq.upper()).issubset(set('AUGCT')):
-        return seq
     if connects is None:
         connects = mat2connects(CDP_BPPM(seq))
     for i in range(len(seq)):
@@ -853,6 +857,7 @@ def _cal_metric_from_tp(length, pred_p, gt_p, tp, eps=1e-12):
     tn = length - tp - fp - fn
     metric_dic = {
             'F1': (2*tp + eps)/(2*tp + fp + fn + eps),
+            'ACC': (tp + tn + eps)/(tp + fp + fn + tn + eps),
             'MCC': (tp * tn - fp * fn + eps)/(((tp+fp)*(tp+fn)*(tn+fp)*(tn+fn))**0.5+eps),
             'Precision': (tp + eps)/(tp+fp+eps),
             'Recall': (tp + eps)/(tp+fn+eps),

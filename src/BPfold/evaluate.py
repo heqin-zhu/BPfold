@@ -30,7 +30,7 @@ def get_index_data(gt_dir, testsets):
                 if dataset not in index_data:
                     index_data[dataset] = []
 
-                for pre, ds, fs in os.listdir(dataset_dir):
+                for pre, ds, fs in os.walk(dataset_dir):
                     for f in fs:
                         if f.endswith('.bpseq'):
                             index_data[dataset].append(os.path.join(pre, f))
@@ -142,12 +142,16 @@ def summary(path, to_latex=True):
     metric_dic = {}
     metric_dic_gt600 = {}
     metric_dic_le600 = {}
+    failed_dic = {}
     for dataset, dic in metric_dic_all.items():
         metric_dic[dataset] = {}
         metric_dic_le600[dataset] = {}
         metric_dic_gt600[dataset] = {}
-        for name, d in dic.items():
-            d = {k: 0 if v is None else v for k,v in d.items()}
+        failed_dic[dataset] = 0
+        for name, d_ori in dic.items():
+            if any([v is None for v in d_ori.values()]):
+                failed_dic[dataset] +=1
+            d = {k: 0 if v is None else v for k,v in d_ori.items()}
             metric_dic[dataset][name] = d
             if d['length']<=600:
                 metric_dic_le600[dataset][name] = d
@@ -155,7 +159,7 @@ def summary(path, to_latex=True):
                 metric_dic_gt600[dataset][name] = d
 
     metric_names = ['INF', 'F1', 'Precision', 'Recall']
-    pred_and_all = sorted([(dataset, len(metric_dic[dataset]),len(d)) for dataset, d in metric_dic_all.items()])
+    pred_and_all = sorted([(dataset, len(dic)-failed_dic[dataset],len(dic)) for dataset, dic in metric_dic_all.items()])
 
     outputs = []
     outputs.append(f'[Summary] {path}')

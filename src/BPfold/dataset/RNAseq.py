@@ -38,9 +38,9 @@ class RNAseq_data(data.Dataset):
                  use_BPE=True, 
                  use_BPP=True, 
                  normalize_energy=False,
-                 verbose=False,
                  para_dir=None,
                  BPM_type='all',
+                 verbose=True,
                  *args,
                  **kargs,
                  ):
@@ -80,7 +80,7 @@ class RNAseq_data(data.Dataset):
                         training_set = set(training_set)
                         if 'PDB_test' in training_set:
                             training_set.update({'PDB_test-TS1', 'PDB_test-TS2', 'PDB_test-TS3'})
-                        print(f'training sets: {training_set}')
+                        self.myprint(f'training sets: {training_set}')
                         all_files = [f for f in all_files if f['dataset'] in training_set]
 
                     all_files.sort(key=lambda dic: dic['path'])
@@ -107,13 +107,13 @@ class RNAseq_data(data.Dataset):
                         test_set = set(test_set)
                         if 'PDB_test' in test_set:
                             test_set.update({'PDB_test-TS1', 'PDB_test-TS2', 'PDB_test-TS3'})
-                        print(f'test sets: {test_set}')
+                        self.myprint(f'test sets: {test_set}')
                         self.file_list = [f for f in self.file_list if f['dataset'] in test_set]
                 self.Lmax = max([f['length'] for f in self.file_list])
             else:
                 raise NotImplementedError
-            print(f'phase={self.phase}, num={len(self.file_list)}, nfolds={nfolds}: {index_file}')
-            print(f'use_BPP={use_BPP}, use_BPE={use_BPE}')
+            self.myprint(f'phase={self.phase}, num={len(self.file_list)}, nfolds={nfolds}: {index_file}')
+            self.myprint(f'use_BPP={use_BPP}, use_BPE={use_BPE}')
             for dic in self.file_list:
                 dic['path'] = os.path.join(self.data_dir, dic['path'])
 
@@ -126,14 +126,17 @@ class RNAseq_data(data.Dataset):
         self.num_base = len(self.base_index)
         self.index_base = {v: k for k, v in self.base_index.items()}
         self.token_index = {k: v for k, v in self.base_index.items()}
-        self.token_index.update({tok: len(self.base_index)+i for i, tok in enumerate(['START', 'END', 'EMPTY'])}) # for sequence embed
+        self.token_index.update({tok: len(self.base_index)+i for i, tok in enumerate(['BOS', 'EOS', 'PAD'])}) # for sequence embed
         self.noncanonical = [self.index_base[i]+self.index_base[j] not in CANONICAL_PAIRS for i, j in product(range(self.num_base), range(self.num_base))]
         self.noncanonical_flag = np.array(self.noncanonical, dtype=bool)
         self.to_device_keywords = {'input', 'input_seqmat', 'mask', 'forward_mask', 'BPPM', 'BPEM', 'seq_onehot', 'nc_map',}
         if self.phase !='predict':
             self.to_device_keywords.add('gt')
-            print(self.token_index)
+            self.myprint(self.token_index)
 
+    def myprint(self, *args):
+        if self.verbose:
+            print(*args)
 
     def __len__(self):
         return len(self.file_list)
@@ -141,17 +144,17 @@ class RNAseq_data(data.Dataset):
     def prepare_data(self, name, seq, connects=None):
         ret = {}
         L = len(seq)
-        ret['ori_seq'] = seq.upper() # AUGC and others
-        ret['seq'] = mut_seq(ret['ori_seq'].replace('T', 'U'), connects) # unknown -> AUGC
+        ret['ori_seq'] = seq
+        ret['seq'] = ''.join([c if c in 'AUGCN' else 'N' for c in ret['ori_seq'].upper().replace('T', 'U')])
         ret['length'] = L
 
         # mask: (Lmax+2)x(Lmax+2)
         mask = torch.zeros(self.Lmax + 2, self.Lmax+2, dtype=torch.bool)
-        for row in range(1, L+1): # not including START and END
+        for row in range(1, L+1): # not including BOS and EOS
             mask[row, 1:L+1] = True
         # forward_mask: Lmax+2
-        forward_mask = torch.zeros(self.Lmax + 2, dtype=torch.bool) # START, seq, END
-        forward_mask[0:L+2] = True # including START and END
+        forward_mask = torch.zeros(self.Lmax + 2, dtype=torch.bool) # BOS, seq, EOS
+        forward_mask[0:L+2] = True # including BOS and EOS
         ret['mask'] = mask
         ret['forward_mask'] = forward_mask
 
@@ -192,11 +195,18 @@ class RNAseq_data(data.Dataset):
         y = {k: ret[k] for k in ['mask', 'forward_mask', 'nc_map', 'seq_onehot']}
         # gt, contact map: (Lmax+2)x(Lmax+2)
         if self.phase != 'predict':
-            gt = connects2mat(connects)
+            ### Important: N won't pair with other base
+            for idx, conn in enumerate(connects):
+                if conn!=0:
+                    if ret['seq'][idx] == 'N':
+                        connects[idx] = connects[conn-1] = 0
+
+            gt = connects2mat(connects, strict=True)
             gt_pad = np.pad(gt, ((1, rside_pad), (1, rside_pad)), constant_values=0)
             ret['gt'] = torch.FloatTensor(gt_pad)
             y['gt'] = ret['gt']
         return ret, y
+
 
     def __getitem__(self, idx):
         info_dic = self.file_list[idx]
@@ -260,15 +270,15 @@ class RNAseq_data(data.Dataset):
     def seq_embed_sequence(self, seq):
         ''' 
             seq: str, len=L, 'AUGC...'
-            ret: ndarray, Lmax+2, 0-6 val, repr 'start AUGC... end empty...'
+            ret: ndarray, Lmax+2, 0-6 val, repr 'BOS AUGC N... end pad...'
         '''
-        ret = [self.token_index['START']]
+        ret = [self.token_index['BOS']]
         ret.extend(self.token_index[s] for s in seq)
-        ret.append(self.token_index['END'])
+        ret.append(self.token_index['EOS'])
         
         # Lmax + 2, final length
         for i in range(self.Lmax - len(seq)): 
-            ret.append(self.token_index['EMPTY'])
+            ret.append(self.token_index['PAD'])
         ret = torch.Tensor(ret).int() # float? TODO
         return ret
 
@@ -284,11 +294,11 @@ class RNAseq_data(data.Dataset):
             if not os.path.exists(txt_path):
                 try:
                     if self.phase == 'predict' and self.verbose:
-                        print(f'[Info] Using "{self.method}" to generate BPPM, saving at "{txt_path}"')
+                        self.myprint(f'[Info] Using "{self.method}" to generate BPPM, saving at "{txt_path}"')
                     gen_BPPM(txt_path, mut_seq(seq), name, self.method)
                 except Exception as e:
                     if self.phase == 'predict' and self.verbose:
-                        print(f'[Warning] {e}, using CDPfold instead')
+                        self.myprint(f'[Warning] {e}, using CDPfold instead')
                     gen_BPPM(txt_path, mut_seq(seq), name, 'CDPfold')
             BPPM = read_BPPM(txt_path, len(seq))
             np.save(npy_path, BPPM)

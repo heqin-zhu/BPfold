@@ -40,7 +40,7 @@ learning:
   num_workers: 4
   pin_memory: False
   pos_weight: 300 # weight of positive samples
-  save_freq: 4
+  save_freq: 1
 model:
   BPfold:
     adj_ks: 3
@@ -49,6 +49,6 @@ model:
     head_size: 32
     not_slice: false
     num_convs: 3
-    positional_embedding: dyn # alibi
+    positional_embedding: dyn #alibi # dyn
     use_se: true
   model_name: BPfold
