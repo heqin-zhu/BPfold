@@ -118,13 +118,15 @@ def postprocess(pred_batch, seq_onehot, nc_map, return_nc=False, return_score=Fa
     ret_score_nc = []
     for i in range(pred_batch.shape[0]):
         pred = apply_constraints(pred_batch[i:i+1], seq_onehot[i:i+1], 0.01, 0.1, 100, 1.6, True, 1.5)
+        pred = (pred > 0.5).float()
         ret_pred.append(pred[0])
 
         if return_score:
             ret_score.append(get_mat_score(pred_batch[i], pred[0]))
         if return_nc:
-            pred_nc = apply_constraints(pred_batch[i:i+1], seq_onehot[i:i+1], 0.01, 0.1, 100, 1.6, True, 1.5, is_nc=True)
+            pred_nc = apply_constraints(pred_batch[i:i+1], seq_onehot[i:i+1], 0.01, 0.1, 100, 0.5, True, 0.5, is_nc=True)
             pred_nc =  nc_map * pred_nc
+            pred_nc = (pred_nc > 0.5).float()
             ret_pred_nc.append(pred_nc[0])
             if return_score:
                 ret_score_nc.append(get_mat_score(pred_batch[i], pred_nc[0]))

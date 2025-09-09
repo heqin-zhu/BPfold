@@ -145,7 +145,8 @@ class RNAseq_data(data.Dataset):
         ret = {}
         L = len(seq)
         ret['ori_seq'] = seq
-        ret['seq'] = ''.join([c if c in 'AUGCN' else 'N' for c in ret['ori_seq'].upper().replace('T', 'U')])
+        # ret['seq'] = ''.join([c if c in 'AUGCN' else 'N' for c in ret['ori_seq'].upper().replace('T', 'U')])
+        ret['seq'] = mut_seq(seq)
         ret['length'] = L
 
         # mask: (Lmax+2)x(Lmax+2)
