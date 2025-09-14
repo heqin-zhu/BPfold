@@ -254,7 +254,7 @@ def write_bpseq(path:str, seq:str, connects:[int], comments=None)->None:
             f.write(f'{i+1} {base.upper()} {connect}\n')
 
 
-def dispart_nc_pairs(seq:str, connects:[int])->[int]:
+def dispart_nc_pairs(seq:str, connects:[int], extra_nc_positions=None)->[int]:
     '''
     Dispart canonical and noncanonical pairs in connects.
 
@@ -270,11 +270,14 @@ def dispart_nc_pairs(seq:str, connects:[int])->[int]:
     connects: [int], length L
     nc_connects: [int], length L
     '''
-    assert len(seq) == len(connects) != 0
+    L = len(seq)
+    assert L == len(connects) != 0
     seq = seq.upper()
     canonical_pairs = {'AU', 'UA', 'GC', 'CG', 'GU', 'UG'}
-    conns = [0] * len(seq)
-    nc_conns = [0] * len(seq)
+    conns = [0] * L
+    nc_conns = [0] * L
+    if extra_nc_positions is None:
+        extra_nc_positions = [False] * L
     for idx, (base, conn) in enumerate(zip(seq, connects)):
         if conn!=0 and idx<conn-1:
             pair = base + seq[conn-1]
@@ -282,6 +285,10 @@ def dispart_nc_pairs(seq:str, connects:[int])->[int]:
                 conns[idx] = conn
                 conns[conn-1] = idx+1
             else:
+                nc_conns[idx] = conn
+                nc_conns[conn-1] = idx+1
+            # extra nc positions
+            if extra_nc_positions[idx] or extra_nc_positions[conn-1]:
                 nc_conns[idx] = conn
                 nc_conns[conn-1] = idx+1
     return conns, nc_conns
@@ -852,6 +859,7 @@ def _cal_metric_from_tp(length, pred_p, gt_p, tp, eps=1e-12):
         positive predicted value: PPV = precision
         negative predicted value: NPV = TN/(TN+FN)
     '''
+    assert 0 <= tp <= pred_p <= length and 0 <= tp <= gt_p <= length, f'length={length}, pred_p={pred_p}, gt_p={gt_p}, tp={tp}'
     fp = pred_p - tp
     fn = gt_p - tp
     tn = length - tp - fp - fn
@@ -863,11 +871,45 @@ def _cal_metric_from_tp(length, pred_p, gt_p, tp, eps=1e-12):
             'Recall': (tp + eps)/(tp+fn+eps),
            }
     metric_dic['INF'] = (metric_dic['Precision']*metric_dic['Recall'])**0.5
+    # print(length, pred_p, gt_p, tp, fp, tn, fn)
+    # print(metric_dic)
+    for k, v in metric_dic.items():
+        if k in ['F1', 'ACC', 'Precision', 'Recall', 'INF']:
+            assert 0 <= v <= 1, f'{k}={v}'
+        elif k == 'MCC':
+            assert -1 <= v <= 1, f'{k}={v}'
+        else:
+            raise Exception(f'Unkonwn metric name: {k}')
     return metric_dic
 
 
-def cal_metric(pred_pairs:[int], gt_pairs:[int]):
+def cal_metric(pred_mat, gt_mat):
     '''
+        pred_mat, gt_mat: LxL, 0, 1 valued
+    '''
+    L = len(pred_mat)
+    if L!=len(gt_mat):
+        raise Exception(f'[Error]: lengthes dismatch: pred {L}!= gt {len(gt_mat)}')
+    if L==0:
+        return 1
+    assert len(pred_mat[0])==len(gt_mat[0])==L, f'[Error] Contact map shape inconsistent: {L}!={pred_mat[0]}, {gt_mat[0]}'
+    pred_p = gt_p = tp = 0 # predpair, gtpair, paired
+    for i in range(L):
+        for j in range(L):
+            pred = pred_mat[i, j]
+            gt = gt_mat[i, j]
+            if gt!=0:
+                gt_p +=1
+            if pred!=0:
+                pred_p +=1
+                if pred==gt:
+                    tp +=1
+    return _cal_metric_from_tp(L*L, pred_p, gt_p, tp)
+
+
+def cal_metric_pairwise(pred_pairs:[int], gt_pairs:[int]):
+    '''
+        # deprecated
         pred_pairs, gt_pairs: connections, 1-indexed
         return: MCC, INF, F1, precision, recall
     '''

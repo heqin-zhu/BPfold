@@ -70,7 +70,7 @@ class BPfold_predict:
 
         self.data_opts = data_opts
 
-    def predict(self, input_seqs=None, input_path=None, batch_size=1, num_workers=1, hook_features=False, save_contact_map=False, save_nc=False):
+    def predict(self, input_seqs=None, input_path=None, batch_size=1, num_workers=1, hook_features=False, save_contact_map=False, ignore_nc=False):
         '''
         BPfold `predict function`, specify input_seqs or input_path 
 
@@ -145,7 +145,7 @@ class BPfold_predict:
                     results = {'seq_name': seq_name, 'seq': seqs[i], 'connects': connects, 'CI': CI}
 
                     ## NC pairs
-                    if save_nc: # not accurate, to be improved
+                    if not ignore_nc: # not accurate enough, to be improved
                         mat_nc_post = ret_pred_nc[i][masks[i]].reshape(length, length).detach().cpu().numpy()
                         results['connects_nc'] = mat2connects(mat_nc_post)
 
@@ -229,21 +229,19 @@ class BPfold_predict:
                 save_name = os.path.basename(os.path.abspath(save_dir))
             df = pd.DataFrame(pred_results)
             df['dbn'] = df['connects'].apply(connects2dbn)
-            # df_out = df[['seq_name', 'seq', 'dbn', 'CI']]
-            df_out = df
             csv_path = os.path.join(save_dir, f'{save_name}.csv')
-            num_digit = math.ceil(math.log(len(df_out), 10))
-            for idx, row in enumerate(df_out.itertuples()):
+            num_digit = math.ceil(math.log(len(df), 10))
+            for idx, row in enumerate(df.itertuples()):
                 print_result(f'{csv_path}:line{idx+2}:{row.seq_name}', idx+1, row.seq, row.dbn, row.CI, hide_dbn=hide_dbn, num_digit=num_digit)
-            df_out.to_csv(csv_path, index=False)
-            print(f"Predicted structures in format of dot-bracket are saved in \"{csv_path}\".")
-
             ## NC pairs
             if 'connects_nc' in df.columns: # not accurate, to be improved
                 df['dbn_nc'] = df['connects_nc'].apply(connects2dbn)
-                df_out_nc = df[['seq_name', 'seq', 'dbn', 'dbn_nc', 'CI']]
-                csv_path_nc = os.path.join(save_dir, f'{save_name}_nc.csv')
-                df_out_nc.to_csv(csv_path_nc, index=False)
+                df['connects_mix'] = df.apply(lambda row: merge_connects(row['connects'], row['connects_nc']), axis=1)
+                # df['connects_mix'] = merge_connects(df['connects'], df['connects_nc']) # Error, 函数必须能够向量化操作才行
+                df['dbn_mix'] = df['connects_mix'].apply(connects2dbn)
+            df.to_csv(csv_path, index=False)
+            print(f"Predicted structures in format of dot-bracket are saved in \"{csv_path}\".")
+
         else:
             num_digit = 7
             confidence_dic = {}
@@ -294,7 +292,7 @@ def parse_args():
     parser.add_argument('--batch_size', type=int, default=1)
     parser.add_argument('--num_workers', type=int, default=1)
     parser.add_argument('--hide_dbn', action='store_true', help='Once specified, the output sequence and predicted DBN won\'t be printed.')
-    parser.add_argument('--save_nc', action='store_true', help='Additionally save prediction with non-canonical pairs.')
+    parser.add_argument('--ignore_nc', action='store_true', help='Ignore non-canonical pairs when saving predictions.')
     parser.add_argument('--save_contact_map', action='store_true')
     parser.add_argument('--hook_features', action='store_true')
     args = parser.parse_args()
@@ -312,7 +310,7 @@ def main():
         show_examples()
 
     BPfold_predictor = BPfold_predict(checkpoint_dir=args.checkpoint_dir)
-    pred_results = BPfold_predictor.predict(args.seq, args.input, args.batch_size, args.num_workers, args.hook_features, args.save_contact_map, save_nc=args.save_nc)
+    pred_results = BPfold_predictor.predict(args.seq, args.input, args.batch_size, args.num_workers, args.hook_features, args.save_contact_map, ignore_nc=args.ignore_nc)
     save_name = get_file_name(args.input) if args.input else None
     BPfold_predictor.save_pred_results(pred_results, save_dir=args.output, save_name=save_name, out_type=args.out_type)
     del BPfold_predictor

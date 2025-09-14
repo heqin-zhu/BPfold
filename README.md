@@ -137,19 +137,27 @@ Loading model_predict/BPfold_3-6.pth
 Loading model_predict/BPfold_4-6.pth
 Loading model_predict/BPfold_5-6.pth
 Loading model_predict/BPfold_6-6.pth
-[      1] saved in "BPfold_results/5s_Shigella-flexneri-3.bpseq", CI=0.973
-CUGGCGGCAGUUGCGCGGUGGUCCCACCUGACCCCAUGCCGAACUCAGAAGUGAAACGCCGUAGCGCCGAUGGUAGUGUGGGGUCUCCCCAUGCGAGAGUAGGGAACUGCCAG
-(((((((.....((((((((.....((((((.............))))..))....)))))).)).((.((....((((((((...))))))))....)).))...)))))))
-[      2] saved in "BPfold_results/URS0000D6831E_12908_1-117.bpseq", CI=0.915
+[      1] saved in "BPfold_results/1M5L.bpseq", CI=0.913
+GCGCAGGACUCGGCUUCUUCGGAAGGGACGAGGGGCGC
+((((....((((.(((((..)))))...))))..))))
+............(..............).......... NC
+((((....((((((((((..)))))..)))))..)))) MIX
+[      2] saved in "BPfold_results/URS0000D6831E_12908_1-117.bpseq", CI=0.892
 UUAUCUCAUCAUGAGCGGUUUCUCUCACAAACCCGCCAACCGAGCCUAAAAGCCACGGUGGUCAGUUCCGCUAAAAGGAAUGAUGUGCCUUUUAUUAGGAAAAAGUGGAACCGCCUG
-......((((((....(((((.......)))).)(((.((((.((......))..))))))).................))))))..(((......)))..................
-Confidence indexes are saved in "BPfold_results_confidence_TIMESTR.yaml"
+......((((((.....((((.......))))..(((.((((.((......))..))))))).................))))))..(((......)))..................
+..................................................................................................................... NC
+......((((((.....((((.......))))..(((.((((.((......))..))))))).................))))))..(((......))).................. MIX
+Confidence indexes are saved in "BPfold_results_confidence_20250915_03h19m33s.yaml"
 Program Finished!
 ```
 
 </details>
 
-For more help information, please run command `BPfold -h` to see.
+
+>[!NOTE]
+>Results (dbn, connects, bpseq...) with no tag are predicted canonical pairs, tagged with `_nc` are predicted non-canonical pairs, and tagged with `_mix` are mixed canonical and non-canonical pairs (i.e., all base pairs). If you want to ignore non-canonical pairs, pass argument `--ignore nc` to BPfold.
+
+Run command `BPfold -h` for more help information.
 
 ## Reproduction
 For reproduction of all the quantitative results, we provide the predicted secondary structures and model parameters of BPfold in experiments. You can **directly downalod** the predicted secondary structures by BPfold *or* **use BPfold v0.2.0** with trained parameters to predict these secondary structures, and then **evaluate** the predicted results.
@@ -165,7 +173,7 @@ tar -xzf BPfold_test_results.tar.gz
 wget https://github.com/heqin-zhu/BPfold/releases/download/v0.2/model_reproduce.tar.gz
 tar -xzf model_reproduce.tar.gz
 ```
-2. Install BPfold v<=0.2.4.
+2. Install BPfold version 0.2.4.
 ```shell
 pip install BPfold==0.2.4
 ```

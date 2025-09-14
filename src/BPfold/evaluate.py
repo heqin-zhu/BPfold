@@ -8,7 +8,7 @@ import numpy as np
 
 from .util.yaml_config import read_yaml, write_yaml
 from .util.misc import timer, get_file_name
-from .util.RNA_kit import read_SS, dispart_nc_pairs, merge_connects, cal_metric
+from .util.RNA_kit import read_SS, dispart_nc_pairs, merge_connects, connects2mat, cal_metric
 
 
 def get_index_data(gt_dir, testsets):
@@ -110,10 +110,10 @@ def evaluate(dest_path:str, pred_dir:str, gt_dir:str, read_pred=None, testsets=N
 
 
 def get_metric_dic(pred_connects, gt_connects):
-    length = len(gt_connects)
-    m_dic = cal_metric(pred_connects, gt_connects)
-    m_dic['length'] = length
+    m_dic = cal_metric(connects2mat(pred_connects), connects2mat(gt_connects))
+    m_dic['length'] = len(gt_connects)
     return m_dic
+
 
 def get_seq_and_pred_gt_connects(pred_path, gt_path, read_pred=None):
     '''
@@ -207,7 +207,6 @@ def main():
         if args.tag is None:
             segs = args.pred_dir.split(os.path.sep)[-3:]
             args.tag = 'eval_'+ '_'.join(segs)
-
         dest_path = args.tag+'.yaml'
         evaluate(dest_path, args.pred_dir, args.gt_dir, testsets=args.testsets, show_nc=args.show_nc)
         summary(dest_path)
