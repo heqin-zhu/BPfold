@@ -39,7 +39,9 @@
     * [Predict RNA secondary structure](#predict-rna-secondary-structure)
 * [Usage](#usage)
     * [Base pair motif library](#base-pair-motif-library)
-    * [BPfold Prediction](#bpfold-prediction)
+    * [BPfold for secondary structure prediction](#bpfold-for-secondary-structure-prediction)
+        * [Run command line](#run-command-line)
+        * [Import python code](#import-python-code)
 * [Reproduction](#reproduction)
 * [Acknowledgement](#acknowledgement)
 * [LICENSE](#license)
@@ -71,16 +73,12 @@ cd BPfold
 conda env create -f BPfold_environment.yaml
 conda activate BPfold
 ```
-2. Install BPfold
-```shell
-pip3 install BPfold
-```
-3. Download [model_predict.tar.gz](https://github.com/heqin-zhu/BPfold/releases/latest/download/model_predict.tar.gz) in [releases](https://github.com/heqin-zhu/BPfold/releases) and decompress it.
+2. Download [model_predict.tar.gz](https://github.com/heqin-zhu/BPfold/releases/latest/download/model_predict.tar.gz) in [releases](https://github.com/heqin-zhu/BPfold/releases) and decompress it.
 ```shell
 wget https://github.com/heqin-zhu/BPfold/releases/latest/download/model_predict.tar.gz
 tar -xzf model_predict.tar.gz
 ```
-4. Optional (for training and evaluation): Download datasets [BPfold_data.tar.gz](https://github.com/heqin-zhu/BPfold/releases/latest/download/BPfold_data.tar.gz) in [releases](https://github.com/heqin-zhu/BPfold/releases) and decompress them.
+3. Optional (for training and evaluation): Download datasets [BPfold_data.tar.gz](https://github.com/heqin-zhu/BPfold/releases/latest/download/BPfold_data.tar.gz) in [releases](https://github.com/heqin-zhu/BPfold/releases) and decompress them.
 ```shell
 wget https://github.com/heqin-zhu/BPfold/releases/latest/download/BPfold_data.tar.gz
 tar -xzf BPfold_data.tar.gz 
@@ -109,7 +107,8 @@ mat2 = BPM.get_energy(seq, normalize_energy=False, dispart_outer_inner=False)
 ```
 
 
-### BPfold Prediction
+### BPfold for secondary structure prediction
+#### Run command line
 Use BPfold to predict RNA secondary structures.
 Args:
 - `--checkpoint_dir`: required, specify checkpoint dir path.
@@ -158,6 +157,61 @@ Program Finished!
 >Results (dbn, connects, bpseq...) with no tag are predicted canonical pairs, tagged with `_nc` are predicted non-canonical pairs, and tagged with `_mix` are mixed canonical and non-canonical pairs (i.e., all base pairs). If you want to ignore non-canonical pairs, pass argument `--ignore_nc` to BPfold.
 
 Run command `BPfold -h` for more help information.
+
+
+#### Import python code
+Specify arguments:
+- `checkpiont_dir`
+- at least one of `input_seqs` (list of seqs) and `input_path` (fasta\_path)
+
+```python
+from BPfold.predict import BPfold_predict
+from BPfold.util.RNA_kit import connects2dbn
+
+
+## arguments
+checkpoint_dir = '' # to be specified
+input_seqs = ['GCGCAGGACUCGGCUUCUUCGGAAGGGACGAGGGGCGC', 'AUGUAUGUCCUGUCGUA'] # to be specified
+input_path = 'examples/examples.fasta'
+
+## init model
+BPfold_predictor = BPfold_predict(checkpoint_dir)
+
+## BPfold predict  # specify at least one of input_seqs and input_path
+pred_results = BPfold_predictor.predict(input_seqs=input_seqs, input_path=input_path, ignore_nc=False)
+
+for dic in pred_results:
+    print(f'>{dic["seq_name"]}')
+    print(dic["seq"])
+    print(connects2dbn(dic["connects"]), f'CI={dic["CI"]:.3f}')
+```
+
+<details>
+
+<summary>Example of BPfold prediction</summary>
+
+```txt
+Loading /public2/home/heqinzhu/gitrepo/RNA/SS_pred/BPfold/src/BPfold/paras/model_predict/BPfold_1-6.pth
+Loading /public2/home/heqinzhu/gitrepo/RNA/SS_pred/BPfold/src/BPfold/paras/model_predict/BPfold_2-6.pth
+Loading /public2/home/heqinzhu/gitrepo/RNA/SS_pred/BPfold/src/BPfold/paras/model_predict/BPfold_3-6.pth
+Loading /public2/home/heqinzhu/gitrepo/RNA/SS_pred/BPfold/src/BPfold/paras/model_predict/BPfold_4-6.pth
+Loading /public2/home/heqinzhu/gitrepo/RNA/SS_pred/BPfold/src/BPfold/paras/model_predict/BPfold_5-6.pth
+Loading /public2/home/heqinzhu/gitrepo/RNA/SS_pred/BPfold/src/BPfold/paras/model_predict/BPfold_6-6.pth
+>seq_20250929_14h23m28s_1
+GCGCAGGACUCGGCUUCUUCGGAAGGGACGAGGGGCGC
+((((....((((.(((((..)))))...))))..)))) CI=0.913
+>seq_20250929_14h23m28s_2
+AUGUAUGUCCUGUCGUA
+.....((......)).. CI=0.807
+>1M5L
+GCGCAGGACUCGGCUUCUUCGGAAGGGACGAGGGGCGC
+((((....((((.(((((..)))))...))))..)))) CI=0.913
+>URS0000D6831E_12908_1-117
+UUAUCUCAUCAUGAGCGGUUUCUCUCACAAACCCGCCAACCGAGCCUAAAAGCCACGGUGGUCAGUUCCGCUAAAAGGAAUGAUGUGCCUUUUAUUAGGAAAAAGUGGAACCGCCUG
+......((((((.....((((.......))))..(((.((((.((......))..))))))).................))))))..(((......))).................. CI=0.892
+```
+
+</detail>
 
 ## Reproduction
 For reproduction of all the quantitative results, we provide the predicted secondary structures and model parameters of BPfold in experiments. You can **directly downalod** the predicted secondary structures by BPfold *or* **use BPfold v0.2.0** with trained parameters to predict these secondary structures, and then **evaluate** the predicted results.

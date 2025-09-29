@@ -31,7 +31,7 @@ def load_eval_checkpoints(ckpt_dir, RNA_model, model_opts, device, ckpt_names=No
         print(f'Loading {os.path.abspath(ckpt_path)}')
         model = RNA_model(**model_opts)
         model = model.to(device)
-        model.load_state_dict(torch.load(ckpt_path, map_location=torch.device('cpu')))
+        model.load_state_dict(torch.load(ckpt_path, map_location=torch.device('cpu'), weights_only=True))
         model.eval()
         models.append(model)
     if models == []:
