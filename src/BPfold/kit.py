@@ -1,7 +1,6 @@
 import os
 import argparse
 
-import tqdm
 import numpy as np
 import pandas as pd
 
@@ -18,7 +17,7 @@ def get_dbn(dest, src, gt_dir=None):
     paths = [os.path.abspath(os.path.join(pre, f)) for pre, ds, fs in os.walk(src) for f in fs if any([f.endswith(suf) for suf in sufs])]
     with open(dest, 'w') as fp:
         ct = 0
-        for src_path in tqdm.tqdm(paths):
+        for src_path in paths:
             ct+=1
             name = get_file_name(src_path)
             seq, connects= read_SS(src_path)

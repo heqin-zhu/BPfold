@@ -1,6 +1,5 @@
 import os
 import yaml
-import tqdm
 import argparse
 
 import torch
@@ -13,6 +12,7 @@ from .util.RNA_kit import read_SS, dispart_nc_pairs, merge_connects, connects2ma
 
 def get_index_data(gt_dir, testsets):
     index_path = None
+    formats = ['bpseq', 'ct', 'dbn', 'BPSEQ', 'CT', 'DBN']
     for index_name in ['data_index.yaml']:
         cur_path = os.path.join(gt_dir, index_name)
         if os.path.exists(cur_path):
@@ -32,8 +32,16 @@ def get_index_data(gt_dir, testsets):
 
                 for pre, ds, fs in os.walk(dataset_dir):
                     for f in fs:
-                        if f.endswith('.bpseq'):
+                        if any([f.endswith(fmt) for fmt in formats]):
                             index_data[dataset].append(os.path.join(pre, f))
+            else:
+                dataname = os.path.basename(gt_dir)
+                index_data[dataname] = []
+                for pre, ds, fs in os.walk(gt_dir):
+                    for f in fs:
+                        if any([f.endswith(fmt) for fmt in formats]):
+                            index_data[dataname].append(os.path.join(pre, f))
+                break
     else:
         for dic in read_yaml(index_path)['test']:
             dataset = dic['dataset']

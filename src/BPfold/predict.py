@@ -89,7 +89,7 @@ class BPfold_predict:
         '''
         dl = self.get_predict_loader(self.data_opts, self.device, input_seqs, input_path, batch_size, num_workers, data_name='RNAseq')
         for data_dic, _ in dl:
-            with torch.no_grad(),torch.cuda.amp.autocast():
+            with torch.no_grad(): #,torch.amp.autocast(self.device):
                 # torch.nan_to_num
                 # BS x forward_batch_Lmax x forward_batch_Lmax
                 pred_batch = torch.stack([model(data_dic) for model in self.models], 0).mean(0)

@@ -155,7 +155,7 @@ Program Finished!
 
 
 >[!NOTE]
->Results (dbn, connects, bpseq...) with no tag are predicted canonical pairs, tagged with `_nc` are predicted non-canonical pairs, and tagged with `_mix` are mixed canonical and non-canonical pairs (i.e., all base pairs). If you want to ignore non-canonical pairs, pass argument `--ignore nc` to BPfold.
+>Results (dbn, connects, bpseq...) with no tag are predicted canonical pairs, tagged with `_nc` are predicted non-canonical pairs, and tagged with `_mix` are mixed canonical and non-canonical pairs (i.e., all base pairs). If you want to ignore non-canonical pairs, pass argument `--ignore_nc` to BPfold.
 
 Run command `BPfold -h` for more help information.
 
