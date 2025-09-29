@@ -42,6 +42,7 @@
     * [BPfold for secondary structure prediction](#bpfold-for-secondary-structure-prediction)
         * [Run command line](#run-command-line)
         * [Import python code](#import-python-code)
+    * [Evaluation](#evaluation)
 * [Reproduction](#reproduction)
 * [Acknowledgement](#acknowledgement)
 * [LICENSE](#license)
@@ -109,7 +110,6 @@ mat2 = BPM.get_energy(seq, normalize_energy=False, dispart_outer_inner=False)
 
 ### BPfold for secondary structure prediction
 #### Run command line
-Use BPfold to predict RNA secondary structures.
 Args:
 - `--checkpoint_dir`: required, specify checkpoint dir path.
 - `--seq`: specify one or more input RNA sequences.
@@ -171,7 +171,7 @@ from BPfold.util.RNA_kit import connects2dbn
 
 ## arguments
 checkpoint_dir = '' # to be specified
-input_seqs = ['GCGCAGGACUCGGCUUCUUCGGAAGGGACGAGGGGCGC', 'AUGUAUGUCCUGUCGUA'] # to be specified
+input_seqs = ['GCGCAGGACUCGGCUUCUUCGGAAGGGACGAGGGGCGC', 'AUGUAUGUCCUGUCGUA']
 input_path = 'examples/examples.fasta'
 
 ## init model
@@ -188,7 +188,7 @@ for dic in pred_results:
 
 <details>
 
-<summary>Example of BPfold prediction</summary>
+<summary>Results of BPfold prediction</summary>
 
 ```txt
 Loading /public2/home/heqinzhu/gitrepo/RNA/SS_pred/BPfold/src/BPfold/paras/model_predict/BPfold_1-6.pth
@@ -211,7 +211,13 @@ UUAUCUCAUCAUGAGCGGUUUCUCUCACAAACCCGCCAACCGAGCCUAAAAGCCACGGUGGUCAGUUCCGCUAAAAGGAA
 ......((((((.....((((.......))))..(((.((((.((......))..))))))).................))))))..(((......))).................. CI=0.892
 ```
 
-</detail>
+</details>
+
+### Evaluation
+Specify `pred_dir` and `gt_dir`. In each directory, there are secondary structures in format of `bpseq`, `ct`, or `dbn`.
+```shell
+BPfold_eval --pred_dir BPfold_results  --gt_dir PATH_TO_NATIVE_STRUCTURES
+```
 
 ## Reproduction
 For reproduction of all the quantitative results, we provide the predicted secondary structures and model parameters of BPfold in experiments. You can **directly downalod** the predicted secondary structures by BPfold *or* **use BPfold v0.2.0** with trained parameters to predict these secondary structures, and then **evaluate** the predicted results.
