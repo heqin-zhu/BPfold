@@ -115,6 +115,7 @@ def evaluate(dest_path:str, pred_dir:str, gt_dir:str, read_pred=None, testsets=N
         miss_path = os.path.join(os.path.dirname(dest_path), get_file_name(dest_path)+'_missing.yaml')
         write_yaml(miss_path, missing_pred)
     write_yaml(dest_path, metric_dic)
+    return metric_dic
 
 
 def get_metric_dic(pred_connects, gt_connects):

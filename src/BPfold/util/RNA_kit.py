@@ -38,6 +38,38 @@ def write_fasta(path:str, name_seq_pairs:[(str, str)])->None:
             fp.write(f'>{name}\n{seq}\n')
 
 
+def read_multi_dbn(path):
+    '''
+    >name
+    seq
+    dbn
+    ...
+    '''
+    with open(path) as fp:
+        lines = [line.strip('\n\r ') for line in fp.readlines()]
+    i = 0
+    n = len(lines)
+    ret = []
+    while i+2<n:
+        if lines[i].startswith('>'):
+            if ' ' in lines[i+2]:
+                dbn, energy = lines[i+2].split()
+                energy = float(energy[1:-1])
+            else:
+                dbn = lines[i+2]
+                energy = None
+            ret.append({
+                        'name': lines[i][1:],
+                        'seq': lines[i+1],
+                        'dbn': dbn,
+                        'energy': energy,
+                       })
+            i+=3
+        else:
+            i+=1
+    return ret
+
+
 def read_SS(path:str, return_index:bool=False):
     '''
     Read secondary structure from bpseq/ct/dbn file.
@@ -64,12 +96,12 @@ def read_SS(path:str, return_index:bool=False):
     elif low_path.endswith('.ct'):
         return read_ct(path, return_index)
     elif low_path.endswith('.dbn'):
-        return read_dbn(path, return_index)
+        return read_connects_from_dbn(path, return_index)
     else:
         raise Exception(f'[Error] Unkown file type: {path}')
 
 
-def read_dbn(path:str, return_index:bool=False):
+def read_connects_from_dbn(path:str, return_index:bool=False):
     seq = dbn = ''
     with open(path) as fp:
         for line in fp.readlines():
