@@ -472,7 +472,7 @@ def connects2dbn(connects:[int])->str:
     return ''.join(ret)
 
 
-def mat2connects(mat, loop_min_len=2, greedy_max_matching=True)->[int]:
+def mat2connects(mat, greedy_max_matching=True)->[int]:
     '''
     Convert contact map to connects, enforce single pairing.
 
@@ -496,11 +496,15 @@ def mat2connects(mat, loop_min_len=2, greedy_max_matching=True)->[int]:
     return connects.tolist()
 
 
-def greedy_max_weight_matching(M):
+def greedy_max_weight_matching(M, loop_min_len=3, mask_value=0):
     '''
     Greedy max weight matching, fast, but may not be optimal.
     '''
     n = len(M)
+    for i in range(n):
+        for j in range(n):
+            if abs(i - j) < loop_min_len:
+                M[i][j] = mask_value
     M_new = np.zeros((n, n), dtype=float)
     used = set()
     

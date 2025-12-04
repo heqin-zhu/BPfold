@@ -3,7 +3,7 @@ from itertools import product
 
 import numpy as np
 
-from .RNA_kit import mut_seq
+from .RNA_kit import mut_seq, mat2connects
 
 
 SRC_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -256,6 +256,26 @@ class BPM_energy:
 
     def get_probability(self, seq:str):
         return self.get_energy(seq, normalize_energy=True, dispart_outer_inner=False)
+
+    def get_score(self, seq:str)->float:
+        '''
+            return a reference folding score based on all possible canonical base pairs.
+        '''
+        # 1xLxL
+        mat_energy = self.get_energy(seq, normalize_energy=False, dispart_outer_inner=False)
+        # convert to LxL
+        if mat_energy.shape[0] == 1 and len(mat_energy.shape)==3:
+            mat_energy = mat_energy[0]
+        mat_score = - mat_energy
+
+        connects = mat2connects(mat_score, greedy_max_matching=True)
+        score = 0
+        for i, conn in enumerate(connects):
+            if conn != 0:
+                j = conn - 1
+                connects[j] = 0
+                score += mat_energy[i, j]
+        return score
 
 
 if __name__ == '__main__':

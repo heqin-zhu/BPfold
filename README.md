@@ -107,6 +107,16 @@ mat = BPM.get_energy(seq)
 mat2 = BPM.get_energy(seq, normalize_energy=False, dispart_outer_inner=False)
 ```
 
+To get a folding score of a sequence for reference, we accumulate all energy items from canonical base pairs assigned by greedy search matching algorithm (issue #2).
+```python
+from src.BPfold.util.base_pair_motif import BPM_energy()
+
+seq = 'GCGCAGGACUCGGCUUCUUCGGAAGGGACGAGGGGCGC'
+score = BPM_energy().get_score(seq)
+print(score)
+```
+
+
 
 ### BPfold for secondary structure prediction
 #### Run command line
