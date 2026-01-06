@@ -100,7 +100,7 @@ from BPfold.util.base_pair_motif import BPM_energy
 BPM = BPM_energy()
 
 seq = 'AUGCGUAGTa'
-# default, recommended, normed to [-1, 1], BPfold used, shape 2xLxL
+# default, recommended, normed according to the major energy of each motif type, BPfold used, shape 2xLxL
 mat = BPM.get_energy(seq)
 
 # origin energy, value may be -50.3, 49.7, ..., shape 1xLxL
