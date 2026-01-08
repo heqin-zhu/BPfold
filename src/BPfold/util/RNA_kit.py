@@ -21,15 +21,21 @@ def read_fasta(path):
         (seq_name, seq)
     '''
     seq_name = None
+    lines = []
     with open(path) as fp:
         for line in fp.readlines():
             line = line.strip(' \n\r\t')
             if line.startswith('#') or line=='':
                 continue
             elif line.startswith('>'):
+                if seq_name is not None:
+                    yield seq_name, ''.join(lines)
+                    lines = []
                 seq_name = line[1:]
             else:
-                yield seq_name, line
+                lines.append(line)
+    if lines and seq_name is not None:
+        yield seq_name, ''.join(lines)
 
 
 def write_fasta(path:str, name_seq_pairs:[(str, str)])->None:
