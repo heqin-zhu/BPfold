@@ -125,7 +125,7 @@ Args:
 - `--seq`: specify one or more input RNA sequences.
 - `--input`: specify input file of RNA seqs in format of `.fasta`(multiple seqs are supported), `.bpseq`, `.ct`, or `.dbn`.
 - `--output`: output dir (will be created automatically), default `BPfold_results`.
-- `--out_type`: out format of RNA secondary structures, can be `.csv`, `.bpseq`, `.ct`, or `.dbn`, default `.csv`
+- `--out_type`: out format of RNA secondary structures, can be `csv`, `bpseq`, `ct`, or `dbn`, default `csv`
 Here are some examples:
 ```shell
 BPfold --checkpoint_dir PATH_TO_CHECKPOINT_DIR --seq GGUAAAACAGCCUGU AGUAGGAUGUAUAUG --output BPfold_results
