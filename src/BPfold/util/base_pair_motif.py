@@ -41,6 +41,11 @@ def gen_base_pair_motif(pair:str, radius:int=3):
     inner chain-break  base pair motif: BPM_iCB,
     outer chain-break base pair motif: BPM_oCB,
 
+    # update at 2026/2/24: more accurate desc
+    BPM_iH: inner hairpin base pair motif: 4^3 + 4^4 + 4^5 + 4^6
+    BPM_iCB: outer/inner chain-break  base pair motif: 4^6
+    BPM_oCB: (outer) **end** chain-break base pair motif: 4^i x 4^j, (i,j)!=(3,3),i<=3, j<=3
+
     Parameters
     ----------
     pair: str
@@ -71,7 +76,7 @@ def gen_base_pair_motif(pair:str, radius:int=3):
     64 16
     3129
     '''
-    # outer base pair motif: extend outward of seq, no more than r neighbors  # 3129
+    # (outer) **end** chain-break base pair motif: extend outward of seq, containint the head/rear base, no more than r neighbors  # 3129
     for l_len, r_len in product(range(4), range(4)):
         if l_len == r_len ==3:
             continue
@@ -86,10 +91,11 @@ def gen_base_pair_motif(pair:str, radius:int=3):
         else:
             r_seqs = product(*[bases for i in range(r_len)])
         for l_seq, r_seq in product(l_seqs, r_seqs):
+            # seq_0_x-chainbreak, _0_x indicates the positions of the paired bases in the base pair motif
             li = [pair[0], *l_seq, *r_seq, pair[1], '_', '0', '_', str(l_len+r_len+1), '-', str(l_len)] # TODO, cb+1?
             yield ''.join(li)
 
-    # inner chain-break base pair motif: dis > 2*r,  # 4096
+    # outer/inner chain-break base pair motif: dis > 2*r,  # 4^6 = 4096
     d = 2*radius
     for seq in product(*[bases for i in range(2*radius)]):
         li = [pair[0], *seq[:radius], *seq[radius:], pair[1], '_', '0', '_', str(2*radius+1), '-', str(radius)] # TODO< cb+1?
