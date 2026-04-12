@@ -59,6 +59,49 @@ class DynamicPositionBias(nn.Module):
         bias = rearrange(bias, 'i j h -> h i j') #   bias.shape == (num_heads, i, i), i==j
         return bias
 
+
+def rotate_half(x):
+    x1 = x[..., ::2]
+    x2 = x[..., 1::2]
+    return torch.stack((-x2, x1), dim=-1).flatten(-2)
+
+
+def apply_rotary_pos_emb(x, cos, sin):
+    return (x * cos) + (rotate_half(x) * sin)
+
+
+class RotaryEmbedding(nn.Module):
+    def __init__(self, dim, base=10000):
+        super().__init__()
+        assert dim % 2 == 0, 'RoPE requires an even head dimension'
+        inv_freq = 1.0 / (base ** (torch.arange(0, dim, 2).float() / dim))
+        self.register_buffer('inv_freq', inv_freq, persistent=False)
+        self.register_buffer('cos_cached', None, persistent=False)
+        self.register_buffer('sin_cached', None, persistent=False)
+
+    def _build_cache(self, seq_len, device, dtype):
+        t = torch.arange(seq_len, device=device, dtype=self.inv_freq.dtype)
+        freqs = torch.outer(t, self.inv_freq)
+        emb = torch.repeat_interleave(freqs, 2, dim=-1)
+        cos = emb.cos()[None, None, :, :].to(dtype=dtype)
+        sin = emb.sin()[None, None, :, :].to(dtype=dtype)
+        self.register_buffer('cos_cached', cos, persistent=False)
+        self.register_buffer('sin_cached', sin, persistent=False)
+
+    def forward(self, q, k):
+        seq_len = q.shape[-2]
+        if (
+            self.cos_cached is None
+            or self.cos_cached.shape[-2] < seq_len
+            or self.cos_cached.device != q.device
+            or self.cos_cached.dtype != q.dtype
+        ):
+            self._build_cache(seq_len, q.device, q.dtype)
+
+        cos = self.cos_cached[..., :seq_len, :]
+        sin = self.sin_cached[..., :seq_len, :]
+        return apply_rotary_pos_emb(q, cos, sin), apply_rotary_pos_emb(k, cos, sin)
+
 def pad_at_dim(t, pad, dim = -1, value = 0.):
     dims_from_right = (- dim - 1) if dim < 0 else (t.ndim - dim - 1)
     zeros = ((0, 0) * dims_from_right)

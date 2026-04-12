@@ -7,6 +7,23 @@ import torch.nn as nn
 from .pos_embed import *
 
 
+def _resolve_group_count(num_channels: int, max_groups: int = 32) -> int:
+    groups = min(max_groups, num_channels)
+    while groups > 1 and num_channels % groups != 0:
+        groups -= 1
+    return groups
+
+
+def build_norm_2d(num_channels: int, norm_type: str = "batchnorm") -> nn.Module:
+    if norm_type == "batchnorm":
+        return nn.BatchNorm2d(num_channels)
+    if norm_type == "syncbatchnorm":
+        return nn.SyncBatchNorm(num_channels)
+    if norm_type == "groupnorm":
+        return nn.GroupNorm(_resolve_group_count(num_channels), num_channels)
+    raise ValueError(f"Unsupported norm_type: {norm_type}")
+
+
 class SE_Block(nn.Module):
     "credits: https://github.com/moskomule/senet.pytorch/blob/master/senet/se_module.py#L4"
     def __init__(self, c, r=1):
@@ -31,6 +48,7 @@ class ResConv2dSimple(nn.Module):
                  out_c,
                  kernel_size=7,
                  use_se = False,
+                 norm_type: str = "batchnorm",
                 ):  
         super().__init__()
         if use_se:
@@ -42,7 +60,7 @@ class ResConv2dSimple(nn.Module):
                           padding="same", 
                           bias=False),
                 # b w h c#
-                nn.BatchNorm2d(out_c),
+                build_norm_2d(out_c, norm_type=norm_type),
                 SE_Block(out_c),
                 nn.GELU(),
                 # b c e 
@@ -57,7 +75,7 @@ class ResConv2dSimple(nn.Module):
                           padding="same", 
                           bias=False),
                 # b w h c#
-                nn.BatchNorm2d(out_c),
+                build_norm_2d(out_c, norm_type=norm_type),
                 nn.GELU(),
                 # b c e 
             )
@@ -93,7 +111,7 @@ class MultiHeadSelfAttention(nn.Module):
                 ):
         super().__init__()
         
-        assert positional_embedding in ("dyn", "alibi")
+        assert positional_embedding in ("dyn", "alibi", "rope")
         self.positional_embedding = positional_embedding
         self.hidden_dim = hidden_dim
         self.num_heads = num_heads or 1
@@ -109,6 +127,8 @@ class MultiHeadSelfAttention(nn.Module):
         elif self.positional_embedding == "alibi":
             alibi_heads = num_heads // 2 + (num_heads % 2 == 1)
             self.alibi = AlibiPositionalBias(alibi_heads, self.num_heads)
+        elif self.positional_embedding == "rope":
+            self.rope = RotaryEmbedding(self.head_size)
             
         self.dropout_layer = nn.Dropout(dropout)
         self.weights = nn.Parameter(torch.empty(self.hidden_dim, 3 * self.hidden_dim)) # QKV
@@ -134,6 +154,8 @@ class MultiHeadSelfAttention(nn.Module):
         if self.bias:
             x = x + self.in_bias
         Q, K, V = x.view(b, l, self.num_heads, -1).permute(0,2,1,3).chunk(3, dim=3) # b, a, l, head
+        if self.positional_embedding == "rope":
+            Q, K = self.rope(Q, K)
         
         norm = self.head_size**0.5
         attention = (Q @ K.transpose(2,3)/self.temperature/norm)
@@ -146,32 +168,32 @@ class MultiHeadSelfAttention(nn.Module):
             i, j = map(lambda t: t.shape[-2], (Q, K))
             attn_bias = self.alibi(i, j).unsqueeze(0)
             attention = attention + attn_bias
-        elif self.positional_embedding == "xpos":
-            self.xpos = XPOS(self.head_size)
 
         if adj is not None:
             if not self.use_se:
                 adj = self.gamma * adj
             attention = attention + adj
 
+        if mask is not None:
+            key_mask = mask.view(b, 1, 1, l)
+            query_mask = mask.view(b, 1, l, 1)
+            attention = attention.masked_fill(~key_mask, torch.finfo(attention.dtype).min)
         attention = attention.softmax(dim=-1) # b, a, l, l, softmax won't change shape
         if mask is not None:
-            ## (batch_size, seq_len)->(batch_size, seq_len, seq_len) -> (batch_size, num_heads, seq_len, seq_len)
-            ## `&` op can be replaced by torch.bmm, more efficient for large computation. To Fix: "baddbmm_cuda" not implemented for 'Bool'
-            mask2d = (mask.unsqueeze(1) & mask.unsqueeze(2)).unsqueeze(1).repeat(1, self.num_heads, 1, 1)
-            # mask2d = mask.view(b,1,1,-1).repeat(1, self.num_heads, l, 1)  # wrong when broadcasting, reference for reproducing paper data
-            attention = attention*mask2d
+            mask2d = (query_mask & key_mask).to(attention.dtype)
+            attention = attention * mask2d
         '''
         ### Note: Different batch sizes result in slightly different outputs because of padding.
         ### There are many calculations that are influenced by padding: 
-        1. another way for cal attetion:  attention = attention.masked_fill(~mask2d, float('-inf') => attention.softmax(dim=-1) =>  attention *= mask2d
-        2. the out_bias may be masked: out_bias = out_bias*mask.unsqueeze(-1)
-        3. the adj when apply conv: adj = adj*mask2d
-        Since the differences are small, we ignore it.
+        1. the out_bias may be masked: out_bias = out_bias*mask.unsqueeze(-1)
+        2. the adj when apply conv: adj = adj*mask2d
+        The largest padding-sensitive part was masking attention after softmax; that is
+        now fixed by masking keys before softmax and zeroing invalid query rows after it.
         '''
 
         out = attention @ V  # b, a, l, head
         out = out.permute(0,2,1,3).flatten(2,3) # b, a, l, head -> b, l, (a, head) -> b, l, hidden
+        out = out @ self.out_w
         if self.bias:
             out = out + self.out_bias
         if return_attn_weights:
@@ -249,6 +271,7 @@ class AdjTransformerEncoder(nn.Module):
                  ks: int = 3,
                  use_se = False,
                  conv_in_chan=0,
+                 norm_type: str = "batchnorm",
                 ):
         super().__init__()
         num_heads, rest = divmod(dim, head_size)
@@ -271,7 +294,15 @@ class AdjTransformerEncoder(nn.Module):
         if conv_in_chan>0:
             self.conv_layers = nn.ModuleList()
             for i in range(num_adj_convs):
-                self.conv_layers.append(ResConv2dSimple(in_c=conv_in_chan if i == 0 else num_heads, out_c=num_heads, kernel_size=ks, use_se=use_se))
+                self.conv_layers.append(
+                    ResConv2dSimple(
+                        in_c=conv_in_chan if i == 0 else num_heads,
+                        out_c=num_heads,
+                        kernel_size=ks,
+                        use_se=use_se,
+                        norm_type=norm_type,
+                    )
+                )
             
             
     def forward(self, x, adj, mask=None):
@@ -301,6 +332,7 @@ class BPfold_model(nn.Module):
                  use_BPP=True,
                  use_BPE=True,
                  dispart_outer_inner=True,
+                 norm_type: str = "batchnorm",
                  *args,
                  **kargs,
                  ):
@@ -327,6 +359,7 @@ class BPfold_model(nn.Module):
             ks=adj_ks,
             use_se=use_se,
             conv_in_chan=conv_in_chan,
+            norm_type=norm_type,
         )
         
         # self.proj_out = nn.Sequential(nn.Linear(dim, dim), nn.GELU(), nn.Linear(dim, 2))
@@ -344,8 +377,12 @@ class BPfold_model(nn.Module):
         x = x0['input'] # BxL
         mat = None
         if self.slice_tokens:
-            forward_batch_Lmax = forward_mask.sum(-1).max()
-            forward_mask = forward_mask[:,:forward_batch_Lmax]
+            forward_batch_Lmax = x0.get('global_forward_batch_Lmax', None)
+            if forward_batch_Lmax is None:
+                forward_batch_Lmax = forward_mask.sum(-1).max()
+            if torch.is_tensor(forward_batch_Lmax):
+                forward_batch_Lmax = int(forward_batch_Lmax.item())
+            forward_mask = forward_mask[:, :forward_batch_Lmax]
             x = self.emb(x[:, :forward_batch_Lmax]) # x: B x forward_batch_Lmax x D
             if self.use_BPP:
                 BPPM = x0['BPPM'][:, :, :forward_batch_Lmax, :forward_batch_Lmax] # Bx1xLxL -> B x 1 x batch_Lmax x batch_Lmax
@@ -355,7 +392,7 @@ class BPfold_model(nn.Module):
                 mat = torch.cat([mat, BPEM], dim=1) if mat is not None else BPEM
         if self.embed_filter:
             filter_embeded = self.filter_embedding(x0['is_good']).unsqueeze(1) # Bx1xE
-            x = x + filter_embed
+            x = x + filter_embeded
         
         x = self.transformer(x, mat, mask=forward_mask) # B x forward_batch_Lmax x D
         out = x @ x.transpose(-1, -2) # B x forward_batch_Lmax x forward_batch_Lmax
@@ -370,7 +407,7 @@ if __name__ == '__main__':
                'head_size': 32,
                'not_slice': False,
                'num_convs': 3,
-               'positional_embedding': 'dyn', # alibi
+               'positional_embedding': 'rope', # dyn / alibi
                'use_se': True,
               }
     Lmax = 128

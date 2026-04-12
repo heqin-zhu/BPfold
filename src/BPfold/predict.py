@@ -1,5 +1,6 @@
 import os, gc
 import argparse
+import json
 import math
 
 import numpy as np
@@ -10,7 +11,7 @@ from torch.utils.data import DataLoader
 from .dataset import get_dataset
 from .model import get_model
 from .util.misc import get_file_name, str_localtime, seed_everything
-from .util.hook_features import hook_features
+from .util.hook_features import hook_features as register_hook_features
 from .util.yaml_config import get_config, read_yaml, write_yaml
 from .util.postprocess import postprocess, apply_constraints
 from .util.data_sampler import DeviceMultiDataLoader
@@ -18,20 +19,85 @@ from .util.RNA_kit import read_SS, write_SS, read_fasta, connects2dbn, mat2conne
 
 
 SRC_DIR = os.path.dirname(os.path.realpath(__file__))
+CHECKPOINT_SUFFIXES = {'.pt', '.pth', '.ckpt'}
+
+
+def _select_checkpoint_names(ckpt_dir, ckpt_names=None):
+    if ckpt_names is not None:
+        return ckpt_names
+
+    valid_names = [
+        name
+        for name in sorted(os.listdir(ckpt_dir))
+        if os.path.isfile(os.path.join(ckpt_dir, name))
+        and os.path.splitext(name)[1].lower() in CHECKPOINT_SUFFIXES
+    ]
+    for preferred_name in ('best_f1.pt', 'best.pt', 'model_best.pt', 'latest.pt'):
+        if preferred_name in valid_names:
+            return [preferred_name]
+    return valid_names
+
+
+def _extract_state_dict(payload):
+    if not isinstance(payload, dict):
+        raise TypeError(f'Checkpoint payload must be a dict, got {type(payload).__name__}')
+    if 'model' in payload and isinstance(payload['model'], dict):
+        payload = payload['model']
+    elif 'state_dict' in payload and isinstance(payload['state_dict'], dict):
+        payload = payload['state_dict']
+    return {
+        key[len('module.'):] if key.startswith('module.') else key: value
+        for key, value in payload.items()
+    }
+
+
+def _load_checkpoint_payload(ckpt_path):
+    payload = torch.load(ckpt_path, map_location=torch.device('cpu'))
+    return _extract_state_dict(payload)
+
+
+def _merge_run_config(checkpoint_dir, data_opts, model_opts):
+    run_config_path = os.path.join(checkpoint_dir, 'config.json')
+    if not os.path.exists(run_config_path):
+        return data_opts, model_opts
+
+    with open(run_config_path, encoding='utf-8') as fp:
+        run_config = json.load(fp)
+
+    baseline = run_config.get('paper_matched_baseline', {})
+    changes = run_config.get('changes_for_this_run', {})
+    args = run_config.get('args', {})
+
+    for key in ('dim', 'depth', 'head_size', 'num_convs', 'use_se', 'use_BPP', 'use_BPE'):
+        if key in baseline:
+            model_opts[key] = baseline[key]
+
+    if 'normalize_energy' in baseline:
+        data_opts['normalize_energy'] = baseline['normalize_energy']
+
+    if 'positional_embedding' in changes:
+        model_opts['positional_embedding'] = changes['positional_embedding']
+    if 'Lmax' in changes:
+        data_opts['Lmax'] = changes['Lmax']
+
+    for key in ('use_BPP', 'use_BPE', 'normalize_energy', 'cache_dir', 'method', 'BPM_type'):
+        if key in args:
+            data_opts[key] = args[key]
+
+    return data_opts, model_opts
 
 
 def load_eval_checkpoints(ckpt_dir, RNA_model, model_opts, device, ckpt_names=None):
     if not os.path.exists(ckpt_dir):
         raise Exception(f'[Error] Checkpoint directory not exist: {ckpt_dir}')
     models = []
-    if ckpt_names is None:
-        ckpt_names = sorted(os.listdir(ckpt_dir))
+    ckpt_names = _select_checkpoint_names(ckpt_dir, ckpt_names)
     for ckpt_name in ckpt_names:
         ckpt_path = os.path.join(ckpt_dir, ckpt_name)
         print(f'Loading {os.path.abspath(ckpt_path)}')
         model = RNA_model(**model_opts)
         model = model.to(device)
-        model.load_state_dict(torch.load(ckpt_path, map_location=torch.device('cpu'), weights_only=True))
+        model.load_state_dict(_load_checkpoint_payload(ckpt_path))
         model.eval()
         models.append(model)
     if models == []:
@@ -53,15 +119,17 @@ class BPfold_predict:
         '''
         self.tmp_dir = '.BPfold_tmp_files'
         self.para_dir = os.path.join(SRC_DIR, 'paras')
-        config_file = os.path.join(SRC_DIR, 'configs/config.yaml')
+        if config_file is None:
+            config_file = os.path.join(SRC_DIR, 'configs/config.yaml')
         opts = get_config(config_file)
         model_name = opts['model']['model_name']
         data_name = opts['dataset']['data_name']
-        data_opts = opts['dataset'][data_name]
-        model_opts = opts['model'][model_name]
-        common_opts = opts['common']
+        data_opts = dict(opts['dataset'][data_name].items())
+        model_opts = dict(opts['model'][model_name].items())
+        common_opts = dict(opts['common'].items())
         data_opts.update(common_opts)
         model_opts.update(common_opts)
+        data_opts, model_opts = _merge_run_config(checkpoint_dir, data_opts, model_opts)
 
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         # load checkpoints
@@ -109,7 +177,7 @@ class BPfold_predict:
                     hook_dir = os.path.join(self.tmp_dir, 'hook_features')
                     os.makedirs(hook_dir, exist_ok=True)
                     hook_module_names = ['TransformerEncoderLayer', 'ResConv2dSimple']
-                    hooker = hook_features(self.models[0], hook_module_names)
+                    hooker = register_hook_features(self.models[0], hook_module_names)
                     module_count = {}
                     for module_name, input_feature, output_feature in zip(*hooker.get_hook_results()):
                         if module_name not in module_count:
