@@ -66,7 +66,8 @@ pip3 install BPfold
 ### Predict RNA secondary structure
 0. Clone this repo
 ```shell
-git clone https://github.com/heqin-zhu/BPfold.git
+git clone git@github.com:heqin-zhu/BPfold.git
+# git clone https://github.com/heqin-zhu/BPfold.git
 cd BPfold
 ```
 1. Create and activate BPfold environment.
