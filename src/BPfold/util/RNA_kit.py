@@ -2,9 +2,6 @@ import re
 
 import numpy as np
 
-from .misc import get_file_name
-from .base_pair_probability import CDP_BPPM
-
 
 def read_fasta(path):
     '''
@@ -671,6 +668,45 @@ def is_valid_bracket(s, ignore_unknown=False):
             if not ignore_unknown:
                 raise Exception(f'[Error] Unknown brackets repr: {s}')
     return all(count_dic[char]==count_dic[left2right[char]] for char in '([{')
+
+
+def CDP_BPPM(seq):
+    def gaussian(x):
+        return math.exp(-0.5*(x*x))
+    def get_score(baseA, baseB):
+        if {baseA, baseB} == {'A', 'U'}:
+            return 2
+        elif {baseA, baseB} == {'G', 'C'}:
+            return 3
+        elif {baseA, baseB} == {'G', 'U'}:
+            return 0.8
+        else:
+            return 0
+    L = len(seq)
+    seq = seq.upper().replace('T', 'U')
+    mat = np.zeros([L, L])
+    for i in range(L):
+        for j in range(L):
+            for add in range(30):
+                if i - add >= 0 and j + add <L:
+                    score = get_score(seq[i-add], seq[j+add])
+                    if score == 0:
+                        break
+                    else:
+                        mat[i,j] = score * gaussian(add)
+                else:
+                    break
+            if mat[i,j] > 0:
+                for add in range(1, 30):
+                    if i + add < L and j - add >= 0:
+                        score = get_score(seq[i+add], seq[j-add])
+                        if score == 0:
+                            break
+                        else:
+                            mat[i,j] = score * gaussian(add)
+                    else:
+                        break
+    return mat
 
 
 def mut_seq(seq:str, connects=None)->str:
